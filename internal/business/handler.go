@@ -61,7 +61,7 @@ func (h Handler) GetViewOutput(ctx context.Context, req GetViewOutputRequest) (G
 
 	err := validateGetViewOutputRequest(spec, req)
 	if err != nil {
-	    return GetViewOutputResponse{}, errors.Wrapf(err, "failed to validate request")
+		return GetViewOutputResponse{}, errors.Wrapf(err, "failed to validate request")
 	}
 
 	v, err := generateViewOutput(ctx, spec, req.Env)
@@ -73,7 +73,7 @@ func (h Handler) GetViewOutput(ctx context.Context, req GetViewOutputRequest) (G
 }
 
 func generateViewOutput(ctx context.Context, s domain.ViewSpec, env []EnvValue) (domain.ViewOutput, error) {
-	cmd := exec.CommandContext(ctx, "/bin/zsh", "-c", s.Command)
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", s.Command)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	var stderr bytes.Buffer
