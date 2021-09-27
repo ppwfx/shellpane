@@ -12,9 +12,3 @@ build:
 
 test:
 	@${SOURCE_MAKE} && test
-
-test-release:
-	@${SOURCE_MAKE} && test-release
-
-release:
-	@${SOURCE_MAKE} && release
