@@ -1,0 +1,4 @@
+- name: hello
+  command: echo hello $HELLO
+  env:
+    - name: HELLO
