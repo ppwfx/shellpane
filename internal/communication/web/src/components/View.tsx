@@ -62,6 +62,10 @@ export const View = (props: ViewProps) => {
         });
     }, [count]);
 
+    const filename = `${props.viewSpec.Name.replaceAll(" ", "_")}_${(new Date()).toISOString().slice(0, 19).replace("T", "_")}.txt`
+
+    console.log(filename)
+
     return (
         <div className="views__view">
             <div className="views__view__header">
@@ -72,7 +76,7 @@ export const View = (props: ViewProps) => {
                 <span className="views__view__header__raw">
                     <a rel="noreferrer" onClick={refresh}>Run </a>
                     <a href={props.client.GetViewOutputLink(rawReq)} target="_blank" rel="noreferrer">Raw </a>
-                    <a href={props.client.GetViewOutputLink(rawReq)} target="_blank" rel="noreferrer" download="file.txt">Download </a>
+                    <a href={props.client.GetViewOutputLink(rawReq)} target="_blank" rel="noreferrer" download={filename}>Download </a>
                 </span>
                 {props.viewSpec.Env ? <ViewEnv env={props.viewSpec.Env} setEnvValue={setEnvValue} refresh={refresh}/> : null}
             </div>

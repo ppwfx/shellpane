@@ -152,7 +152,12 @@ input {
   margin-left: 5px;
   margin-right: 5px;
   font-weight: bold;
+  width: 80px;
   background: #ffeac4;
+}
+
+.view__env__input:focus {
+  width: 150px;
 }
 
 .ant-message-error .anticon {
