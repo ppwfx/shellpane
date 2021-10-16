@@ -1,7 +1,7 @@
 # shellpane
 
 - BE
-    - specs.yaml -> shellpane.yaml
+    - ~~specs.yaml - shellpane.yaml~~
     - specs.yaml makes specs a field
     - add input validation
     
@@ -11,4 +11,5 @@
     - disable input when loading
     - update indicator
     - always print stdout and stderr!
+    - 
   

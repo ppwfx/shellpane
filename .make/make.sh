@@ -3,7 +3,7 @@
 set -eox pipefail
 
 function run-backend() {
-  export SPECS_YAML="$(cat .make/specs.yaml)"
+  export SHELLPANE_YAML="$(cat .make/shellpane.yaml)"
 
   go run cmd/main.go --http-addr 0.0.0.0:8888
 }
