@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/ppwfx/shellpane/internal/domain"
 	"log"
 	"os"
 	"os/signal"
@@ -41,12 +42,16 @@ func getConfig(args []string) (bootstrap.ContainerConfig, error) {
 		return conf, errors.Wrapf(err, "failed to parse command line arguments")
 	}
 
+	shellpaneConfig := domain.ShellpaneConfig{}
+
 	if shellpaneYAML != "" {
-		err = yaml.Unmarshal([]byte(shellpaneYAML), &conf.Persistence.ViewSpecs)
+		err = yaml.Unmarshal([]byte(shellpaneYAML), &shellpaneConfig)
 		if err != nil {
 			return conf, errors.Wrapf(err, "failed to unmarshal specs-yaml=%v", shellpaneYAML)
 		}
 	}
+	conf.Persistence.ViewSpecs = shellpaneConfig.Views
+
 
 	return conf, nil
 }

@@ -1,4 +1,5 @@
-- name: hello
-  command: echo hello $HELLO
-  env:
-    - name: HELLO
+views:
+  - name: hello
+    command: echo hello $HELLO
+    env:
+      - name: HELLO

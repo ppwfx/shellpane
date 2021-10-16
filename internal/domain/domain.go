@@ -1,5 +1,9 @@
 package domain
 
+type ShellpaneConfig struct {
+	Views 		[]ViewSpec
+}
+
 type ViewSpec struct {
 	Name        string
 	Command     string
