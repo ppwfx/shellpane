@@ -1,6 +1,8 @@
 package persistence
 
-import "github.com/ppwfx/shellpane/internal/domain"
+import (
+	"github.com/ppwfx/shellpane/internal/domain"
+)
 
 type RepositoryConfig struct {
 }
@@ -24,7 +26,7 @@ func (r Repository) GetViewSpecs() []domain.ViewSpec {
 	return r.opts.ViewSpecs
 }
 
-func (r Repository) GetViewSpecByName(name string) (domain.ViewSpec, bool) {
+func (r Repository) GetViewSpec(name string) (domain.ViewSpec, bool) {
 	for i := range r.opts.ViewSpecs {
 		if r.opts.ViewSpecs[i].Name == name {
 			return r.opts.ViewSpecs[i], true
