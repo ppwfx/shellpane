@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"syscall"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 
 	"github.com/ppwfx/shellpane/internal/domain"
@@ -42,37 +43,57 @@ const (
 	FormatRaw = "raw"
 )
 
-type GetViewOutputRequest struct {
-	Name   string
-	Format string
-	Env    []EnvValue
+type GetStepOutputRequest struct {
+	ViewName string
+	ViewEnv  []EnvValue
+	StepName string
+	StepEnv  []EnvValue
+	Format   string
 }
 
-type GetViewOutputResponse struct {
+type GetStepOutputResponse struct {
 	errutil.Response
-	Output domain.ViewOutput
+	Output domain.StepOutput
 }
 
-func (h Handler) GetViewOutput(ctx context.Context, req GetViewOutputRequest) (GetViewOutputResponse, error) {
-	spec, ok := h.opts.Repository.GetViewSpecByName(req.Name)
+func (h Handler) GetStepOutput(ctx context.Context, req GetStepOutputRequest) (GetStepOutputResponse, error) {
+	view, ok := h.opts.Repository.GetViewSpec(req.ViewName)
 	if !ok {
-		return GetViewOutputResponse{}, errors.Wrapf(errutil.NotFound(errutil.Nil(), "ViewSpec", req.Name), "failed to find ViewSpec by name=%v", req.Name)
+		return GetStepOutputResponse{}, errors.Wrapf(errutil.NotFound(errutil.Nil(), "View", req.ViewName), "failed to find View with view name=%v", req.ViewName)
 	}
 
-	err := validateGetViewOutputRequest(spec, req)
+	step, ok := getStep(view, req.StepName)
+	if !ok {
+		return GetStepOutputResponse{}, errors.Wrapf(errutil.NotFound(errutil.Nil(), "Step", req.StepName), "failed to find Step with view name=%v and step name=%v", req.ViewName, req.StepName)
+	}
+
+	err := validateGetStepOutputRequest(view, step, req)
 	if err != nil {
-		return GetViewOutputResponse{}, errors.Wrapf(err, "failed to validate request")
+		return GetStepOutputResponse{}, errors.Wrapf(err, "failed to validate request")
 	}
 
-	v, err := generateViewOutput(ctx, spec, req.Env)
+	env := append(req.ViewEnv, req.StepEnv...)
+	spew.Dump(env)
+
+	v, err := generateStepOutput(ctx, step, env)
 	if err != nil {
-		return GetViewOutputResponse{}, errors.Wrapf(err, "failed to generate view")
+		return GetStepOutputResponse{}, errors.Wrapf(err, "failed to generate view")
 	}
 
-	return GetViewOutputResponse{Output: v}, nil
+	return GetStepOutputResponse{Output: v}, nil
 }
 
-func generateViewOutput(ctx context.Context, s domain.ViewSpec, env []EnvValue) (domain.ViewOutput, error) {
+func getStep(viewSpec domain.ViewSpec, name string) (domain.Step, bool) {
+	for i := range viewSpec.Steps {
+		if viewSpec.Steps[i].Name == name {
+			return viewSpec.Steps[i], true
+		}
+	}
+
+	return domain.Step{}, false
+}
+
+func generateStepOutput(ctx context.Context, s domain.Step, env []EnvValue) (domain.StepOutput, error) {
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", s.Command)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -87,7 +108,7 @@ func generateViewOutput(ctx context.Context, s domain.ViewSpec, env []EnvValue) 
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, envStrings...)
 
-	o := domain.ViewOutput{}
+	o := domain.StepOutput{}
 
 	err := cmd.Run()
 	var exitErr *exec.ExitError
@@ -95,12 +116,12 @@ func generateViewOutput(ctx context.Context, s domain.ViewSpec, env []EnvValue) 
 	case err != nil && errors.As(err, &exitErr):
 		stat, ok := exitErr.Sys().(syscall.WaitStatus)
 		if !ok {
-			return domain.ViewOutput{}, errors.Wrapf(errutil.Unknown(errors.Errorf("can't cast exit error=%v to syscall.WaitStatus", exitErr)), "failed to get exit code")
+			return domain.StepOutput{}, errors.Wrapf(errutil.Unknown(errors.Errorf("can't cast exit error=%v to syscall.WaitStatus", exitErr)), "failed to get exit code")
 		}
 
 		o.ExitCode = stat.ExitStatus()
 	case err != nil:
-		return domain.ViewOutput{}, errors.Wrapf(errutil.Unknown(err), "failed to run command")
+		return domain.StepOutput{}, errors.Wrapf(errutil.Unknown(err), "failed to run command")
 	}
 
 	o.Stdout = stdout.String()

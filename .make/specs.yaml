@@ -1,4 +1,28 @@
-- name: hello
-  command: echo hello $HELLO
+- name: Early Morning
   env:
-    - name: HELLO
+    - name: NAME
+  steps:
+    - name: Wake up
+      command: echo good morning $NAME, the sun is shining! how are you?
+      env:
+        - name: ANSWER
+    - name: Respond
+      command: echo hello $ANSWER
+      env:
+        - name: ANSWER
+    - name: Wake up2
+      command: echo good morning $NAME, the sun is shining! how are you?
+    - name: Respond2
+      command: echo hello $ANSWER
+      env:
+        - name: ANSWER
+- name: Sleep
+  steps:
+    - name: sleep
+      command: sleep 1s && echo time
+- name: long
+  env:
+    - name: NAME
+  steps:
+    - name: long
+      command: echo a\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\n

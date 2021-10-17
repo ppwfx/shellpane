@@ -19,9 +19,14 @@ import (
 )
 
 const (
-	NamePrintHello = "print hello"
-	NameFailing    = "failing"
-	NameWithEnv    = "withenv"
+	ViewNamePrintHello      = "print hello"
+	ViewNameFailing         = "failing"
+	ViewNameWithStepEnv     = "withstepenv"
+	ViewNameWithViewEnv     = "withviewenv"
+	ViewNameWithViewStepEnv = "withviewstepenv"
+
+	StepNameExit  = "exit"
+	StepNamePrint = "print"
 )
 
 var testConfig = bootstrap.ContainerConfig{
@@ -32,19 +37,67 @@ var testConfig = bootstrap.ContainerConfig{
 	Persistence: persistence.Config{
 		ViewSpecs: []domain.ViewSpec{
 			{
-				Name:    NamePrintHello,
-				Command: `echo hello`,
+				Name: ViewNamePrintHello,
+				Steps: []domain.Step{
+					{
+						Name:    StepNamePrint,
+						Command: `echo hello`,
+					},
+				},
 			},
 			{
-				Name:    NameFailing,
-				Command: `exit 1`,
+				Name: ViewNameFailing,
+				Steps: []domain.Step{
+					{
+						Name:    StepNameExit,
+						Command: `exit 1`,
+					},
+				},
 			},
 			{
-				Name:    NameWithEnv,
-				Command: "echo $FOO",
+				Name: ViewNameWithStepEnv,
+				Steps: []domain.Step{
+					{
+						Name:    StepNamePrint,
+						Command: "echo $FOO",
+						Env: []domain.EnvSpec{
+							{
+								Name: "FOO",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name: ViewNameWithViewEnv,
 				Env: []domain.EnvSpec{
 					{
 						Name: "FOO",
+					},
+				},
+				Steps: []domain.Step{
+					{
+						Name:    StepNamePrint,
+						Command: "echo $FOO",
+					},
+				},
+			},
+			{
+				Name: ViewNameWithViewStepEnv,
+				Env: []domain.EnvSpec{
+					{
+						Name: "FOO",
+					},
+				},
+				Steps: []domain.Step{
+					{
+						Name:    StepNamePrint,
+						Command: "echo $FOO $BAR",
+						Env: []domain.EnvSpec{
+							{
+								Name: "BAR",
+							},
+						},
 					},
 				},
 			},
@@ -121,42 +174,95 @@ func Test_Internal(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	t.Run("valid GetView request with successful command", func(t *testing.T) {
-		rsp, err := client.GetViewOutput(ctx, business.GetViewOutputRequest{Name: NamePrintHello})
+	t.Run("valid GetStepOutput request with successful command", func(t *testing.T) {
+		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+			ViewName: ViewNamePrintHello,
+			StepName: StepNamePrint,
+		})
 		require.NoError(t, err)
 
-		expected := domain.ViewOutput{
-			Stdout:   "hello\n",
+		expected := domain.StepOutput{
+			Stdout: "hello\n",
 		}
 
 		assert.Equal(t, expected, rsp.Output)
 	})
 
-	t.Run("valid GetViewOutput request with failing command", func(t *testing.T) {
-		rsp, err := client.GetViewOutput(ctx, business.GetViewOutputRequest{Name: NameFailing})
+	t.Run("valid GetStepOutput request with failing command", func(t *testing.T) {
+		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+			ViewName: ViewNameFailing,
+			StepName: StepNameExit,
+		})
 		require.NoError(t, err)
 
-		expected := domain.ViewOutput{
+		expected := domain.StepOutput{
 			ExitCode: 1,
 		}
 
 		assert.Equal(t, expected, rsp.Output)
 	})
 
-	t.Run("valid GetViewOutput request with env", func(t *testing.T) {
-		rsp, err := client.GetViewOutput(ctx, business.GetViewOutputRequest{
-			Name: NameWithEnv,
-			Env: []business.EnvValue{
+	t.Run("valid GetStepOutput request with step env", func(t *testing.T) {
+		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+			ViewName: ViewNameWithStepEnv,
+			StepName: StepNamePrint,
+			StepEnv: []business.EnvValue{
 				{
-					Name: "FOO",
+					Name:  "FOO",
 					Value: "bar",
 				},
 			},
 		})
 		require.NoError(t, err)
 
-		expected := domain.ViewOutput{
-			Stdout:   "bar\n",
+		expected := domain.StepOutput{
+			Stdout: "bar\n",
+		}
+
+		assert.Equal(t, expected, rsp.Output)
+	})
+
+	t.Run("valid GetStepOutput request with view env", func(t *testing.T) {
+		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+			ViewName: ViewNameWithViewEnv,
+			StepName: StepNamePrint,
+			ViewEnv: []business.EnvValue{
+				{
+					Name:  "FOO",
+					Value: "bar",
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		expected := domain.StepOutput{
+			Stdout: "bar\n",
+		}
+
+		assert.Equal(t, expected, rsp.Output)
+	})
+
+	t.Run("valid GetStepOutput request with view and step env", func(t *testing.T) {
+		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+			ViewName: ViewNameWithViewStepEnv,
+			StepName: StepNamePrint,
+			ViewEnv: []business.EnvValue{
+				{
+					Name:  "FOO",
+					Value: "foo",
+				},
+			},
+			StepEnv: []business.EnvValue{
+				{
+					Name:  "BAR",
+					Value: "bar",
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		expected := domain.StepOutput{
+			Stdout: "foo bar\n",
 		}
 
 		assert.Equal(t, expected, rsp.Output)

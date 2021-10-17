@@ -34,17 +34,21 @@ func NewClient(opts ClientOpts) Client {
 	}
 }
 
-func (c Client) GetViewOutput(ctx context.Context, req business.GetViewOutputRequest) (rsp business.GetViewOutputResponse, err error) {
-	rawURL := c.opts.Config.Host + RouteGetViewOutput
+func (c Client) GetStepOutput(ctx context.Context, req business.GetStepOutputRequest) (rsp business.GetStepOutputResponse, err error) {
+	rawURL := c.opts.Config.Host + RouteGetStepOutput
 	URL, err := url.Parse(rawURL)
 	if err != nil {
-		return business.GetViewOutputResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
+		return business.GetStepOutputResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
 	}
 
 	q := URL.Query()
-	q.Set("name", req.Name)
-	for i := range req.Env {
-		q.Set("env" + req.Env[i].Name, req.Env[i].Value)
+	q.Set("view_name", req.ViewName)
+	q.Set("step_name", req.StepName)
+	for i := range req.ViewEnv {
+		q.Set("view_env"+req.ViewEnv[i].Name, req.ViewEnv[i].Value)
+	}
+	for i := range req.StepEnv {
+		q.Set("step_env"+req.StepEnv[i].Name, req.StepEnv[i].Value)
 	}
 
 	URL.RawQuery = q.Encode()

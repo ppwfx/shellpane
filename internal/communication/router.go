@@ -32,7 +32,7 @@ type RouterOpts struct {
 }
 
 const (
-	RouteGetViewOutput = "/getViewOutput"
+	RouteGetStepOutput = "/getStepOutput"
 	RouteGetViewSpecs  = "/getViewSpecs"
 )
 
@@ -64,23 +64,35 @@ func NewRouter(opts RouterOpts) http.Handler {
 
 	mux.Handle("/", AddPrefix("/web/build", http.FileServer(http.FS(webFS))))
 
-	mux.HandleFunc(RouteGetViewOutput, func(w http.ResponseWriter, r *http.Request) {
-		var req business.GetViewOutputRequest
-		req.Name = r.URL.Query().Get("name")
+	mux.HandleFunc(RouteGetStepOutput, func(w http.ResponseWriter, r *http.Request) {
+		var req business.GetStepOutputRequest
+		req.ViewName = r.URL.Query().Get("view_name")
+		req.StepName = r.URL.Query().Get("step_name")
 		req.Format = r.URL.Query().Get("format")
 
 		for k, v := range r.URL.Query() {
-			if !strings.HasPrefix(k, "env") {
+			if !strings.HasPrefix(k, "view_env") {
 				continue
 			}
 
-			req.Env = append(req.Env, business.EnvValue{
-				Name:  strings.TrimPrefix(k, "env"),
+			req.ViewEnv = append(req.ViewEnv, business.EnvValue{
+				Name:  strings.TrimPrefix(k, "view_env"),
 				Value: strings.Join(v, ""),
 			})
 		}
 
-		rsp, err := opts.Handler.GetViewOutput(r.Context(), req)
+		for k, v := range r.URL.Query() {
+			if !strings.HasPrefix(k, "step_env") {
+				continue
+			}
+
+			req.StepEnv = append(req.StepEnv, business.EnvValue{
+				Name:  strings.TrimPrefix(k, "step_env"),
+				Value: strings.Join(v, ""),
+			})
+		}
+
+		rsp, err := opts.Handler.GetStepOutput(r.Context(), req)
 
 		switch {
 		case err == nil && req.Format == business.FormatRaw:

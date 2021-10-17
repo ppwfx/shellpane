@@ -13,16 +13,24 @@ func Test_ValidateViewSpecs(t *testing.T) {
 		specs := []domain.ViewSpec{
 			{
 				Name: "a",
-				Command: "a",
-				Env: []domain.EnvSpec{
+				Steps: []domain.Step{
 					{
-						Name: "a",
+						Command: "a",
+						Env: []domain.EnvSpec{
+							{
+								Name: "a",
+							},
+						},
 					},
 				},
 			},
 			{
 				Name: "b",
-				Command: "b",
+				Steps: []domain.Step{
+					{
+						Command: "a",
+					},
+				},
 			},
 		}
 
@@ -34,11 +42,19 @@ func Test_ValidateViewSpecs(t *testing.T) {
 		specs := []domain.ViewSpec{
 			{
 				Name: "a",
-				Command: "a",
+				Steps: []domain.Step{
+					{
+						Command: "a",
+					},
+				},
 			},
 			{
 				Name: "a",
-				Command: "b",
+				Steps: []domain.Step{
+					{
+						Command: "a",
+					},
+				},
 			},
 		}
 
@@ -46,11 +62,15 @@ func Test_ValidateViewSpecs(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("missing spec name", func(t *testing.T) {
+	t.Run("missing view name", func(t *testing.T) {
 		specs := []domain.ViewSpec{
 			{
 				Name: "",
-				Command: "a",
+				Steps: []domain.Step{
+					{
+						Command: "a",
+					},
+				},
 			},
 		}
 
@@ -58,11 +78,15 @@ func Test_ValidateViewSpecs(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("missing spec command", func(t *testing.T) {
+	t.Run("missing step command", func(t *testing.T) {
 		specs := []domain.ViewSpec{
 			{
 				Name: "a",
-				Command: "",
+				Steps: []domain.Step{
+					{
+						Command: "",
+					},
+				},
 			},
 		}
 
@@ -74,7 +98,11 @@ func Test_ValidateViewSpecs(t *testing.T) {
 		specs := []domain.ViewSpec{
 			{
 				Name: "a",
-				Command: "a",
+				Steps: []domain.Step{
+					{
+						Command: "a",
+					},
+				},
 				Env: []domain.EnvSpec{
 					{
 						Name: "a",
@@ -94,7 +122,11 @@ func Test_ValidateViewSpecs(t *testing.T) {
 		specs := []domain.ViewSpec{
 			{
 				Name: "a",
-				Command: "a",
+				Steps: []domain.Step{
+					{
+						Command: "a",
+					},
+				},
 				Env: []domain.EnvSpec{
 					{
 						Name: "",
