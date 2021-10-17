@@ -9,7 +9,7 @@ function run-backend() {
 }
 
 function test() {
-  go test ./...
+  go test -v ./...
 }
 
 function run-frontend() {

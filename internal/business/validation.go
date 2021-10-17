@@ -2,10 +2,12 @@ package business
 
 import (
 	"github.com/pkg/errors"
-
 	"github.com/ppwfx/shellpane/internal/domain"
 	"github.com/ppwfx/shellpane/internal/utils/errutil"
+	"regexp"
 )
+
+
 
 func ValidateViewSpecs(specs []domain.ViewSpec) error {
 	err := validateViewSpecNames(specs)
@@ -102,8 +104,29 @@ func validateGetViewOutputRequest(spec domain.ViewSpec, req GetViewOutputRequest
 	for i := range req.Env {
 		_, ok := validEnvNames[req.Env[i].Name]
 		if !ok {
-			return errutil.Invalid(errors.Errorf("invalid env name=%v", req.Env[i].Name))
+			return errutil.Invalid(errors.Errorf("invalid env-name=%v", req.Env[i].Name))
 		}
+	}
+
+
+	for i := range spec.Env {
+		err := validate(spec.Env[i], req.Env[i])
+		if err != nil {
+		    return errors.Wrapf(err, "input not valid %v=%v", spec.Env[i], req.Env[i])
+		}
+	}
+
+	return nil
+}
+
+func validate(spec domain.EnvSpec, val EnvValue) error {
+	re, err := regexp.Compile(spec.Validator)
+	if err != nil {
+		return errutil.Invalid(errors.Wrapf(err, "invalid regular expression=%v", spec.Validator))
+	}
+	ok := re.MatchString(val.Value)
+	if !ok {
+		return errutil.Invalid(errors.Errorf("invalid env-value %v=%v", val.Name, val.Value))
 	}
 
 	return nil

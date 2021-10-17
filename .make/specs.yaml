@@ -2,3 +2,11 @@
   command: echo hello $HELLO
   env:
     - name: HELLO
+      # starts with big/small letter, followed by 10 lowercase letters until the end, min chars = 2
+      validator: `^[A-Za-z]?[a-z]{2,10}$`
+- name: chdir
+  command: cd $DIR
+  env:
+    - name: DIR
+      # big & small letters, numbers the dot & slash are allowed
+      validator: `^[A-Za-z0-9_./-]{1,15}$`

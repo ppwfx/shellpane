@@ -4,6 +4,7 @@
     - specs.yaml -> shellpane.yaml
     - specs.yaml makes specs a field
     - add input validation
+    - sync types -> frontend client
     
 - FE
     - autocomplete

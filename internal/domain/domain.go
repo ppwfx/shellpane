@@ -14,4 +14,5 @@ type ViewOutput struct {
 
 type EnvSpec struct {
 	Name string
+	Validator string
 }

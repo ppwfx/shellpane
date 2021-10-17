@@ -71,13 +71,14 @@ func main() {
 	go func() {
 		<-sigCh
 		cancel()
+
 		c.Close(ctx)
 	}()
 
 	err = func(ctx context.Context) (err error) {
 		logger, err := c.GetLogger(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get logger")
+		    return errors.Wrapf(err, "failed to get logger")
 		}
 
 		srv, err := c.GetHTTPServer(ctx)
