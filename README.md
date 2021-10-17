@@ -2,7 +2,7 @@
 
 - BE
     - ~~specs.yaml - shellpane.yaml~~
-    - specs.yaml makes specs a field
+    - ~~specs.yaml makes specs a field~~
     - add input validation
     
 - FE
