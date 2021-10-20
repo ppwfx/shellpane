@@ -3,17 +3,18 @@
     - name: NAME
   steps:
     - name: Wake up
-      command: echo good morning $NAME, the sun is shining! how are you?
+      command: echo "good morning $NAME, the sun is shining! how are you?" && sleep 1
       env:
         - name: ANSWER
     - name: Respond
-      command: echo hello $ANSWER
+      command: echo "hello $ANSWER" && echo a\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\na\\n && sleep 1
       env:
         - name: ANSWER
+        - name: ANSWER2
     - name: Wake up2
-      command: echo good morning $NAME, the sun is shining! how are you?
+      command: echo "good morning $NAME, the sun is shining! how are you?" && sleep 1
     - name: Respond2
-      command: echo hello $ANSWER
+      command: echo "hello $ANSWER" && sleep 1
       env:
         - name: ANSWER
 - name: Sleep
