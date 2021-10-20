@@ -4,9 +4,14 @@ export const FormatRaw = "raw"
 
 export interface ViewSpec {
     Name: string
-    Description: string
-    Command: string
     Env: EnvSpec[]
+    Steps: Step[]
+}
+
+export interface Step {
+    Name: string
+    Env: EnvSpec[]
+    Command: string
 }
 
 export interface EnvSpec {
@@ -18,7 +23,7 @@ export interface EnvValue {
     Value: string
 }
 
-export interface ViewOutput {
+export interface StepOutput {
     Stdout: string
     Stderr: string
     ExitCode: number
@@ -33,14 +38,16 @@ export interface ErrorResponse {
     Error: ResponseError
 }
 
-export interface GetViewOutputRequest {
-    Name: string
+export interface GetStepOutputRequest {
+    ViewName: string
+    ViewEnv?: EnvValue[]
+    StepName: string
+    StepEnv?: EnvValue[]
     Format?: string
-    Env?: EnvValue[]
 }
 
-export interface GetViewOutputResponse extends ErrorResponse {
-    Output: ViewOutput
+export interface GetStepOutputResponse extends ErrorResponse {
+    Output: StepOutput
 }
 
 export interface GetViewSpecsRequest {
@@ -81,24 +88,30 @@ export class Client {
         return rsp.data
     }
 
-    GetViewOutputLink(req: GetViewOutputRequest): string {
-        let url = new URL(this.opts.config.addr + "/getViewOutput")
-        url.searchParams.append("name", req.Name)
+    GetStepOutputLink(req: GetStepOutputRequest): string {
+        let url = new URL(this.opts.config.addr + "/getStepOutput")
+        url.searchParams.append("step_name", req.StepName)
+        url.searchParams.append("view_name", req.ViewName)
         if (req.Format && req.Format !== "") {
             url.searchParams.append("format", req.Format)
         }
-        if (req.Env) {
-            req.Env.forEach((v: EnvValue)=> {
-                url.searchParams.append("env" + v.Name, v.Value)
+        if (req.ViewEnv) {
+            req.ViewEnv.forEach((v: EnvValue) => {
+                url.searchParams.append("view_env" + v.Name, v.Value)
+            })
+        }
+        if (req.StepEnv) {
+            req.StepEnv.forEach((v: EnvValue) => {
+                url.searchParams.append("step_env" + v.Name, v.Value)
             })
         }
 
         return url.toString()
     }
 
-    async GetViewOuput(req: GetViewOutputRequest): Promise<GetViewOutputResponse> {
-        let rsp = await this.client.request<GetViewOutputResponse>({
-            url: this.GetViewOutputLink(req),
+    async GetViewOuput(req: GetStepOutputRequest): Promise<GetStepOutputResponse> {
+        let rsp = await this.client.request<GetStepOutputResponse>({
+            url: this.GetStepOutputLink(req),
             method: "get",
             data: req,
             headers: {

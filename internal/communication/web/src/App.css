@@ -25,10 +25,6 @@ body {
   }
 }
 
-a, a:hover {
-  color: #ffae18;
-}
-
 input {
   outline-color: #ffae18;
 }
@@ -69,14 +65,36 @@ input {
   border: 3px solid #ddd;
   border-radius: 5px;
   height: 406px;
+  background: #f3f3f3;
 }
 
 .views__view__header {
   padding: 5px;
   padding-left: 10px;
-  border-bottom: 3px solid #eee;
   font-weight: bold;
-  height: 30px;
+  height: 27px;
+  background: #ffffff;
+}
+
+.views__view__body {
+  height: 374px;
+  overflow-y: scroll;
+}
+
+.views__view__body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.views__view__body::-webkit-scrollbar-track {
+  background: rgba(255, 174, 24, 0.0);
+}
+
+.views__view__body::-webkit-scrollbar-thumb {
+  background: #ffae18;
+}
+
+.views__view__body::-webkit-scrollbar-thumb:hover {
+  background: #fff;
 }
 
 .views__view__command {
@@ -95,19 +113,57 @@ input {
   white-space: nowrap;
 }
 
-.views__view__output {
-  height: 340px;
+.views__view__steps {
 }
 
-.views__view__output textarea {
+.views__view__step__header {
+  padding: 5px;
+  padding-left: 10px;
+  background: #fff;
+  border-bottom: 3px solid #eee;
+  font-weight: bold;
+  height: 30px;
+}
+
+.views__view__header a {
+  color: #dddddd;
+}
+
+.views__view__header--active a {
+  color: #ffae18;
+}
+
+.views__view__step__header a {
+  color: #dddddd;
+}
+
+.views__view__step--active .views__view__step__header a {
+  color: #ffae18;
+}
+
+/*.views__view__step__header:nth-child(1) {*/
+/*  border-top: none;*/
+/*}*/
+
+.views__view__output {
   resize: none;
   height: 100%;
-  border: none;
   display: block;
+  padding: 8px;
+  min-height: 28px;
   padding-left: 10px;
   font-weight: bold;
   width: 100%;
-  white-space: pre;
+  white-space: pre-line;
+
+  border: solid 0px #ffae18;
+}
+
+.views__view__output--highlight {
+  border: solid 3px #f3f3f3;
+  padding: 2px;
+  /*padding-left: 5px;*/
+  transition: border-color 1s ease;
 }
 
 .views__view__header__name {
@@ -116,7 +172,7 @@ input {
 
 .views__view__header__loader {
   float: left;
-  padding-left: 5px;
+  padding-right: 5px;
   padding-top: 2px;
 }
 
@@ -154,6 +210,10 @@ input {
   font-weight: bold;
   width: 80px;
   background: #ffeac4;
+}
+
+.view__env__input:disabled {
+  background: #afafaf;
 }
 
 .view__env__input:focus {

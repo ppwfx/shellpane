@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 
 	"github.com/ppwfx/shellpane/internal/domain"
@@ -73,7 +72,6 @@ func (h Handler) GetStepOutput(ctx context.Context, req GetStepOutputRequest) (G
 	}
 
 	env := append(req.ViewEnv, req.StepEnv...)
-	spew.Dump(env)
 
 	v, err := generateStepOutput(ctx, step, env)
 	if err != nil {
