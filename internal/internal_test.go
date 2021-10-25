@@ -14,94 +14,13 @@ import (
 	"github.com/ppwfx/shellpane/internal/business"
 	"github.com/ppwfx/shellpane/internal/communication"
 	"github.com/ppwfx/shellpane/internal/domain"
-	"github.com/ppwfx/shellpane/internal/persistence"
 	"github.com/ppwfx/shellpane/internal/utils/logutil"
 )
 
-const (
-	ViewNamePrintHello      = "print hello"
-	ViewNameFailing         = "failing"
-	ViewNameWithStepEnv     = "withstepenv"
-	ViewNameWithViewEnv     = "withviewenv"
-	ViewNameWithViewStepEnv = "withviewstepenv"
-
-	StepNameExit  = "exit"
-	StepNamePrint = "print"
-)
-
-var testConfig = bootstrap.ContainerConfig{
+var baseConfig = bootstrap.ContainerConfig{
 	Logger: logutil.LoggerConfig{
 		MinLevel:     logutil.LevelDebug,
 		ReportCaller: true,
-	},
-	Persistence: persistence.Config{
-		ViewSpecs: []domain.ViewSpec{
-			{
-				Name: ViewNamePrintHello,
-				Steps: []domain.Step{
-					{
-						Name:    StepNamePrint,
-						Command: `echo hello`,
-					},
-				},
-			},
-			{
-				Name: ViewNameFailing,
-				Steps: []domain.Step{
-					{
-						Name:    StepNameExit,
-						Command: `exit 1`,
-					},
-				},
-			},
-			{
-				Name: ViewNameWithStepEnv,
-				Steps: []domain.Step{
-					{
-						Name:    StepNamePrint,
-						Command: "echo $FOO",
-						Env: []domain.EnvSpec{
-							{
-								Name: "FOO",
-							},
-						},
-					},
-				},
-			},
-			{
-				Name: ViewNameWithViewEnv,
-				Env: []domain.EnvSpec{
-					{
-						Name: "FOO",
-					},
-				},
-				Steps: []domain.Step{
-					{
-						Name:    StepNamePrint,
-						Command: "echo $FOO",
-					},
-				},
-			},
-			{
-				Name: ViewNameWithViewStepEnv,
-				Env: []domain.EnvSpec{
-					{
-						Name: "FOO",
-					},
-				},
-				Steps: []domain.Step{
-					{
-						Name:    StepNamePrint,
-						Command: "echo $FOO $BAR",
-						Env: []domain.EnvSpec{
-							{
-								Name: "BAR",
-							},
-						},
-					},
-				},
-			},
-		},
 	},
 	Communication: communication.Config{
 		Client: communication.ClientConfig{
@@ -122,12 +41,22 @@ var testConfig = bootstrap.ContainerConfig{
 	},
 }
 
-func Test_Internal(t *testing.T) {
+func Test_Web(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
-	config := testConfig
+	config := baseConfig
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Categories: []bootstrap.CategoryConfig{
+			{
+				Slug:  "A",
+				Name:  "A",
+				Color: "A",
+			},
+		},
+	}
 
 	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
 		Config: config,
@@ -147,9 +76,6 @@ func Test_Internal(t *testing.T) {
 	httpClient, err := c.GetHTTPClient(ctx)
 	require.NoError(t, err)
 
-	client, err := c.GetClient(ctx)
-	require.NoError(t, err)
-
 	t.Run("get web", func(t *testing.T) {
 		resp, err := httpClient.Get(config.Communication.Client.Host + "/")
 		require.NoError(t, err)
@@ -159,6 +85,17 @@ func Test_Internal(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.True(t, strings.Contains(string(b), "</html>"))
+	})
+
+	t.Run("get categories css", func(t *testing.T) {
+		resp, err := httpClient.Get(config.Communication.Client.Host + communication.RouteStaticCategoriesCSS)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		assert.True(t, strings.Contains(string(b), ".background--"))
 	})
 
 	t.Run("get web without basic auth", func(t *testing.T) {
@@ -174,107 +111,511 @@ func Test_Internal(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	t.Run("valid GetStepOutput request with successful command", func(t *testing.T) {
-		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
-			ViewName: ViewNamePrintHello,
-			StepName: StepNamePrint,
+	errs := c.Close(ctx)
+	require.Empty(t, errs)
+}
+
+func Test_ExecuteCommand(t *testing.T) {
+	const (
+		CommandPrintHello  = "command print hello"
+		CommandFailing     = "command failing"
+		CommandWithViewEnv = "command with view env"
+		InputFOO           = "FOO"
+	)
+
+	t.Parallel()
+
+	ctx := context.Background()
+
+	config := baseConfig
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Inputs: []bootstrap.InputConfig{
+			{
+				Slug: "FOO",
+			},
+		},
+		Commands: []bootstrap.CommandConfig{
+			{
+				Slug:    CommandPrintHello,
+				Command: "echo hello",
+			},
+			{
+				Slug:    CommandFailing,
+				Command: `exit 1`,
+			},
+			{
+				Slug: CommandWithViewEnv,
+				Inputs: []bootstrap.CommandInputConfig{
+					{
+						InputSlug: InputFOO,
+					},
+				},
+				Command: "echo $FOO",
+			},
+		},
+	}
+
+	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+		Config: config,
+	})
+
+	go func() {
+		srv, err := c.GetHTTPServer(ctx)
+		require.NoError(t, err)
+
+		l, err := c.GetHTTPListener(ctx)
+		require.NoError(t, err)
+
+		err = srv.Serve(l)
+		//require.NoError(t, err)
+	}()
+
+	client, err := c.GetClient(ctx)
+	require.NoError(t, err)
+
+	t.Run("valid request with successful command", func(t *testing.T) {
+		rsp, err := client.ExecuteCommand(ctx, business.ExecuteCommandRequest{
+			Slug: CommandPrintHello,
 		})
 		require.NoError(t, err)
 
-		expected := domain.StepOutput{
+		expected := business.CommandOutput{
 			Stdout: "hello\n",
 		}
 
 		assert.Equal(t, expected, rsp.Output)
 	})
 
-	t.Run("valid GetStepOutput request with failing command", func(t *testing.T) {
-		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
-			ViewName: ViewNameFailing,
-			StepName: StepNameExit,
+	t.Run("valid request with failing command", func(t *testing.T) {
+		rsp, err := client.ExecuteCommand(ctx, business.ExecuteCommandRequest{
+			Slug: CommandFailing,
 		})
 		require.NoError(t, err)
 
-		expected := domain.StepOutput{
+		expected := business.CommandOutput{
 			ExitCode: 1,
 		}
 
 		assert.Equal(t, expected, rsp.Output)
 	})
 
-	t.Run("valid GetStepOutput request with step env", func(t *testing.T) {
-		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
-			ViewName: ViewNameWithStepEnv,
-			StepName: StepNamePrint,
-			StepEnv: []business.EnvValue{
+	t.Run("valid request with input", func(t *testing.T) {
+		rsp, err := client.ExecuteCommand(ctx, business.ExecuteCommandRequest{
+			Slug: CommandWithViewEnv,
+			Inputs: []business.InputValue{
 				{
-					Name:  "FOO",
+					Name:  InputFOO,
 					Value: "bar",
 				},
 			},
 		})
 		require.NoError(t, err)
 
-		expected := domain.StepOutput{
+		expected := business.CommandOutput{
 			Stdout: "bar\n",
 		}
 
 		assert.Equal(t, expected, rsp.Output)
-	})
-
-	t.Run("valid GetStepOutput request with view env", func(t *testing.T) {
-		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
-			ViewName: ViewNameWithViewEnv,
-			StepName: StepNamePrint,
-			ViewEnv: []business.EnvValue{
-				{
-					Name:  "FOO",
-					Value: "bar",
-				},
-			},
-		})
-		require.NoError(t, err)
-
-		expected := domain.StepOutput{
-			Stdout: "bar\n",
-		}
-
-		assert.Equal(t, expected, rsp.Output)
-	})
-
-	t.Run("valid GetStepOutput request with view and step env", func(t *testing.T) {
-		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
-			ViewName: ViewNameWithViewStepEnv,
-			StepName: StepNamePrint,
-			ViewEnv: []business.EnvValue{
-				{
-					Name:  "FOO",
-					Value: "foo",
-				},
-			},
-			StepEnv: []business.EnvValue{
-				{
-					Name:  "BAR",
-					Value: "bar",
-				},
-			},
-		})
-		require.NoError(t, err)
-
-		expected := domain.StepOutput{
-			Stdout: "foo bar\n",
-		}
-
-		assert.Equal(t, expected, rsp.Output)
-	})
-
-	t.Run("valid GetViewSpecs request", func(t *testing.T) {
-		rsp, err := client.GetViewSpecs(ctx, business.GetViewSpecsRequest{})
-		require.NoError(t, err)
-
-		assert.Equal(t, config.Persistence.ViewSpecs, rsp.Specs)
 	})
 
 	errs := c.Close(ctx)
 	require.Empty(t, errs)
 }
+
+func Test_GetViewConfigs(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	config := baseConfig
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Inputs: []bootstrap.InputConfig{
+			{
+				Slug: "B",
+			},
+		},
+		Commands: []bootstrap.CommandConfig{
+			{
+				Slug:    "A",
+				Command: "A",
+			},
+			{
+				Slug:    "B",
+				Command: "B",
+				Inputs: []bootstrap.CommandInputConfig{
+					{
+						InputSlug: "B",
+					},
+				},
+			},
+		},
+		Sequences: []bootstrap.SequenceConfig{
+			{
+				Slug: "A",
+				Steps: []bootstrap.StepConfig{
+					{
+						Name:        "A",
+						CommandSlug: "A",
+					},
+					{
+						Name:        "B",
+						CommandSlug: "B",
+					},
+				},
+			},
+		},
+		Views: []bootstrap.ViewConfig{
+			{
+				Name:        "A",
+				CommandSlug: "A",
+			},
+			{
+				Name:         "B",
+				SequenceSlug: "A",
+			},
+		},
+	}
+
+	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+		Config: config,
+	})
+
+	go func() {
+		srv, err := c.GetHTTPServer(ctx)
+		require.NoError(t, err)
+
+		l, err := c.GetHTTPListener(ctx)
+		require.NoError(t, err)
+
+		err = srv.Serve(l)
+		//require.NoError(t, err)
+	}()
+
+	client, err := c.GetClient(ctx)
+	require.NoError(t, err)
+
+	t.Run("valid request", func(t *testing.T) {
+		rsp, err := client.GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+		require.NoError(t, err)
+
+		expected := []domain.ViewConfig{
+			{
+				Name: "A",
+				Command: domain.CommandConfig{
+					Slug:    "A",
+					Command: "A",
+				},
+			},
+			{
+				Name: "B",
+				Sequence: domain.SequenceConfig{
+					Slug: "A",
+					Steps: []domain.StepConfig{
+						{
+							Name: "A",
+							Command: domain.CommandConfig{
+								Slug:    "A",
+								Command: "A",
+							},
+						},
+						{
+							Name: "B",
+							Command: domain.CommandConfig{
+								Slug:    "B",
+								Command: "B",
+								Inputs: []domain.CommandInputConfig{
+									{
+										Input: domain.InputConfig{
+											Slug: "B",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.Equal(t, expected, rsp.ViewConfigs)
+	})
+
+	errs := c.Close(ctx)
+	require.Empty(t, errs)
+}
+
+func Test_GetCategoryConfigs(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	config := baseConfig
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Categories: []bootstrap.CategoryConfig{
+			{
+				Slug:  "A",
+				Name:  "A",
+				Color: "A",
+			},
+			{
+				Slug:  "B",
+				Name:  "B",
+				Color: "B",
+			},
+		},
+	}
+
+	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+		Config: config,
+	})
+
+	go func() {
+		srv, err := c.GetHTTPServer(ctx)
+		require.NoError(t, err)
+
+		l, err := c.GetHTTPListener(ctx)
+		require.NoError(t, err)
+
+		err = srv.Serve(l)
+		//require.NoError(t, err)
+	}()
+
+	client, err := c.GetClient(ctx)
+	require.NoError(t, err)
+
+	t.Run("valid request", func(t *testing.T) {
+		rsp, err := client.GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+		require.NoError(t, err)
+
+		expected := []domain.CategoryConfig{
+			{
+				Slug:  "A",
+				Name:  "A",
+				Color: "A",
+			},
+			{
+				Slug:  "B",
+				Name:  "B",
+				Color: "B",
+			},
+		}
+
+		assert.Equal(t, expected, rsp.CategoryConfigs)
+	})
+
+	errs := c.Close(ctx)
+	require.Empty(t, errs)
+}
+
+//
+//func Test_StepViews(t *testing.T) {
+//	const (
+//		StepsPrintHello      = "steps print hello"
+//		StepsFailing         = "steps failing"
+//		StepsWithStepEnv     = "steps withstepenv"
+//		StepsWithViewEnv     = "steps withviewenv"
+//		StepsWithViewStepEnv = "steps withviewstepenv"
+//
+//		StepExit  = "exit"
+//		StepPrint = "print"
+//	)
+//
+//	t.Parallel()
+//
+//	ctx := context.Background()
+//
+//	config := baseConfig
+//
+//	config.Persistence.ViewSpecs = []domain.ViewSpec{
+//		{
+//			Name: StepsPrintHello,
+//			Steps: []domain.Step{
+//				{
+//					Name:    StepPrint,
+//					Command: `echo hello`,
+//				},
+//			},
+//		},
+//		{
+//			Name: StepsFailing,
+//			Steps: []domain.Step{
+//				{
+//					Name:    StepExit,
+//					Command: `exit 1`,
+//				},
+//			},
+//		},
+//		{
+//			Name: StepsWithStepEnv,
+//			Steps: []domain.Step{
+//				{
+//					Name:    StepPrint,
+//					Env: []domain.EnvSpec{
+//						{
+//							Name: "FOO",
+//						},
+//					},
+//					Command: "echo $FOO",
+//				},
+//			},
+//		},
+//		{
+//			Name: StepsWithViewEnv,
+//			Env: []domain.EnvSpec{
+//				{
+//					Name: "FOO",
+//				},
+//			},
+//			Steps: []domain.Step{
+//				{
+//					Name:    StepPrint,
+//					Command: "echo $FOO",
+//				},
+//			},
+//		},
+//		{
+//			Name: StepsWithViewStepEnv,
+//			Env: []domain.EnvSpec{
+//				{
+//					Name: "FOO",
+//				},
+//			},
+//			Steps: []domain.Step{
+//				{
+//					Name:    StepPrint,
+//					Env: []domain.EnvSpec{
+//						{
+//							Name: "BAR",
+//						},
+//					},
+//					Command: "echo $FOO $BAR",
+//				},
+//			},
+//		},
+//	}
+//
+//	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+//		Config: config,
+//	})
+//
+//	go func() {
+//		srv, err := c.GetHTTPServer(ctx)
+//		require.NoError(t, err)
+//
+//		l, err := c.GetHTTPListener(ctx)
+//		require.NoError(t, err)
+//
+//		err = srv.Serve(l)
+//		//require.NoError(t, err)
+//	}()
+//
+//	client, err := c.GetClient(ctx)
+//	require.NoError(t, err)
+//
+//	t.Run("valid GetStepOutput request with successful command", func(t *testing.T) {
+//		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+//			ViewName: StepsPrintHello,
+//			StepName: StepPrint,
+//		})
+//		require.NoError(t, err)
+//
+//		expected := business.CommandOutput{
+//			Stdout: "hello\n",
+//		}
+//
+//		assert.Equal(t, expected, rsp.Output)
+//	})
+//
+//	t.Run("valid GetStepOutput request with failing command", func(t *testing.T) {
+//		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+//			ViewName: StepsFailing,
+//			StepName: StepExit,
+//		})
+//		require.NoError(t, err)
+//
+//		expected := business.CommandOutput{
+//			ExitCode: 1,
+//		}
+//
+//		assert.Equal(t, expected, rsp.Output)
+//	})
+//
+//	t.Run("valid GetStepOutput request with step env", func(t *testing.T) {
+//		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+//			ViewName: StepsWithStepEnv,
+//			StepName: StepPrint,
+//			StepEnv: []business.EnvValue{
+//				{
+//					Name:  "FOO",
+//					Value: "bar",
+//				},
+//			},
+//		})
+//		require.NoError(t, err)
+//
+//		expected := business.CommandOutput{
+//			Stdout: "bar\n",
+//		}
+//
+//		assert.Equal(t, expected, rsp.Output)
+//	})
+//
+//	t.Run("valid GetStepOutput request with view env", func(t *testing.T) {
+//		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+//			ViewName: StepsWithViewEnv,
+//			StepName: StepPrint,
+//			ViewEnv: []business.EnvValue{
+//				{
+//					Name:  "FOO",
+//					Value: "bar",
+//				},
+//			},
+//		})
+//		require.NoError(t, err)
+//
+//		expected := business.CommandOutput{
+//			Stdout: "bar\n",
+//		}
+//
+//		assert.Equal(t, expected, rsp.Output)
+//	})
+//
+//	t.Run("valid GetStepOutput request with view and step env", func(t *testing.T) {
+//		rsp, err := client.GetStepOutput(ctx, business.GetStepOutputRequest{
+//			ViewName: StepsWithViewStepEnv,
+//			StepName: StepPrint,
+//			ViewEnv: []business.EnvValue{
+//				{
+//					Name:  "FOO",
+//					Value: "foo",
+//				},
+//			},
+//			StepEnv: []business.EnvValue{
+//				{
+//					Name:  "BAR",
+//					Value: "bar",
+//				},
+//			},
+//		})
+//		require.NoError(t, err)
+//
+//		expected := business.CommandOutput{
+//			Stdout: "foo bar\n",
+//		}
+//
+//		assert.Equal(t, expected, rsp.Output)
+//	})
+//
+//	t.Run("valid GetConfigs request", func(t *testing.T) {
+//		rsp, err := client.GetViewSpecs(ctx, business.GetViewSpecsRequest{})
+//		require.NoError(t, err)
+//
+//		assert.Equal(t, config.Persistence.ViewSpecs, rsp.Specs)
+//	})
+//
+//	errs := c.Close(ctx)
+//	require.Empty(t, errs)
+//}

@@ -34,21 +34,17 @@ func NewClient(opts ClientOpts) Client {
 	}
 }
 
-func (c Client) GetStepOutput(ctx context.Context, req business.GetStepOutputRequest) (rsp business.GetStepOutputResponse, err error) {
-	rawURL := c.opts.Config.Host + RouteGetStepOutput
+func (c Client) ExecuteCommand(ctx context.Context, req business.ExecuteCommandRequest) (rsp business.ExecuteCommandResponse, err error) {
+	rawURL := c.opts.Config.Host + RouteExecuteCommand
 	URL, err := url.Parse(rawURL)
 	if err != nil {
-		return business.GetStepOutputResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
+		return business.ExecuteCommandResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
 	}
 
 	q := URL.Query()
-	q.Set("view_name", req.ViewName)
-	q.Set("step_name", req.StepName)
-	for i := range req.ViewEnv {
-		q.Set("view_env"+req.ViewEnv[i].Name, req.ViewEnv[i].Value)
-	}
-	for i := range req.StepEnv {
-		q.Set("step_env"+req.StepEnv[i].Name, req.StepEnv[i].Value)
+	q.Set("slug", req.Slug)
+	for i := range req.Inputs {
+		q.Set("input_"+req.Inputs[i].Name, req.Inputs[i].Value)
 	}
 
 	URL.RawQuery = q.Encode()
@@ -61,11 +57,26 @@ func (c Client) GetStepOutput(ctx context.Context, req business.GetStepOutputReq
 	return
 }
 
-func (c Client) GetViewSpecs(ctx context.Context, req business.GetViewSpecsRequest) (rsp business.GetViewSpecsResponse, err error) {
-	rawURL := c.opts.Config.Host + RouteGetViewSpecs
+func (c Client) GetViewConfigs(ctx context.Context, req business.GetViewConfigsRequest) (rsp business.GetViewConfigsResponse, err error) {
+	rawURL := c.opts.Config.Host + RouteGetViewConfigs
 	URL, err := url.Parse(rawURL)
 	if err != nil {
-		return business.GetViewSpecsResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
+		return business.GetViewConfigsResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
+	}
+
+	err = c.doJsonRequest(ctx, URL.String(), http.MethodGet, nil, &rsp)
+	if err != nil {
+		return rsp, errors.Wrapf(err, "failed to do json request with url=%v", URL.String())
+	}
+
+	return
+}
+
+func (c Client) GetCategoryConfigs(ctx context.Context, req business.GetCategoryConfigsRequest) (rsp business.GetCategoryConfigsResponse, err error) {
+	rawURL := c.opts.Config.Host + RouteGetCategoryConfigs
+	URL, err := url.Parse(rawURL)
+	if err != nil {
+		return business.GetCategoryConfigsResponse{}, errors.Wrapf(err, "failed to parse url=%v", rawURL)
 	}
 
 	err = c.doJsonRequest(ctx, URL.String(), http.MethodGet, nil, &rsp)

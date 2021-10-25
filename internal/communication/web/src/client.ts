@@ -2,31 +2,42 @@ import axios, {AxiosInstance} from 'axios';
 
 export const FormatRaw = "raw"
 
-export interface ViewSpec {
+export interface ViewConfig {
     Name: string
-    Env: EnvSpec[]
-    Steps: Step[]
+    Command?: CommandConfig
+    Sequence?: SequenceConfig
+    Category: CategoryConfig
 }
 
-export interface Step {
+export interface CategoryConfig {
+    Slug: string
     Name: string
-    Env: EnvSpec[]
+    Color: string
+}
+
+export interface SequenceConfig {
+    Slug: string
+    Steps: StepConfig[]
+}
+
+export interface StepConfig {
+    Name: string
+    Command: CommandConfig
+}
+
+export interface CommandConfig {
+    Slug: string
     Command: string
+    Inputs: CommandInputConfig[]
 }
 
-export interface EnvSpec {
+export interface CommandInputConfig {
     Name: string
+    Input: InputConfig
 }
 
-export interface EnvValue {
-    Name: string
-    Value: string
-}
-
-export interface StepOutput {
-    Stdout: string
-    Stderr: string
-    ExitCode: number
+export interface InputConfig {
+    Slug: string
 }
 
 export interface ResponseError {
@@ -38,23 +49,39 @@ export interface ErrorResponse {
     Error: ResponseError
 }
 
-export interface GetStepOutputRequest {
-    ViewName: string
-    ViewEnv?: EnvValue[]
-    StepName: string
-    StepEnv?: EnvValue[]
+export interface ExecuteCommandRequest {
+    Slug: string
+    Inputs: InputValue[]
     Format?: string
 }
 
-export interface GetStepOutputResponse extends ErrorResponse {
-    Output: StepOutput
+export interface InputValue {
+    Name: string
+    Value: string
 }
 
-export interface GetViewSpecsRequest {
+export interface ExecuteCommandResponse extends ErrorResponse {
+    Output: CommandOutput
 }
 
-export interface GetViewSpecsResponse extends ErrorResponse {
-    Specs?: ViewSpec[]
+export interface CommandOutput {
+    Stdout: string
+    Stderr: string
+    ExitCode: number
+}
+
+export interface GetViewConfigsRequest {
+}
+
+export interface GetViewConfigsResponse extends ErrorResponse {
+    ViewConfigs?: ViewConfig[]
+}
+
+export interface GetCategoryConfigsRequest {
+}
+
+export interface GetCategoryConfigsResponse extends ErrorResponse {
+    CategoryConfigs?: CategoryConfig[]
 }
 
 export interface ClientConfig {
@@ -75,9 +102,9 @@ export class Client {
         this.client = axios.create({})
     }
 
-    async GetViewSpecs(req: GetViewSpecsRequest): Promise<GetViewSpecsResponse> {
-        let rsp = await this.client.request<GetViewSpecsResponse>({
-            url: this.opts.config.addr + "/getViewSpecs",
+    async GetViewConfigs(req: GetViewConfigsRequest): Promise<GetViewConfigsResponse> {
+        let rsp = await this.client.request<GetViewConfigsResponse>({
+            url: this.opts.config.addr + "/getViewConfigs",
             method: "get",
             data: req,
             headers: {
@@ -88,30 +115,37 @@ export class Client {
         return rsp.data
     }
 
-    GetStepOutputLink(req: GetStepOutputRequest): string {
-        let url = new URL(this.opts.config.addr + "/getStepOutput")
-        url.searchParams.append("step_name", req.StepName)
-        url.searchParams.append("view_name", req.ViewName)
+    async GetCategoryConfigs(req: GetCategoryConfigsRequest): Promise<GetCategoryConfigsResponse> {
+        let rsp = await this.client.request<GetCategoryConfigsResponse>({
+            url: this.opts.config.addr + "/getCategoryConfigs",
+            method: "get",
+            data: req,
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+            },
+        });
+
+        return rsp.data
+    }
+
+    ExecuteCommandLink(req: ExecuteCommandRequest): string {
+        let url = new URL(this.opts.config.addr + "/executeCommand")
+        url.searchParams.append("slug", req.Slug)
         if (req.Format && req.Format !== "") {
             url.searchParams.append("format", req.Format)
         }
-        if (req.ViewEnv) {
-            req.ViewEnv.forEach((v: EnvValue) => {
-                url.searchParams.append("view_env" + v.Name, v.Value)
-            })
-        }
-        if (req.StepEnv) {
-            req.StepEnv.forEach((v: EnvValue) => {
-                url.searchParams.append("step_env" + v.Name, v.Value)
+        if (req.Inputs) {
+            req.Inputs.forEach((v: InputValue) => {
+                url.searchParams.append("input_" + v.Name, v.Value)
             })
         }
 
         return url.toString()
     }
 
-    async GetViewOuput(req: GetStepOutputRequest): Promise<GetStepOutputResponse> {
-        let rsp = await this.client.request<GetStepOutputResponse>({
-            url: this.GetStepOutputLink(req),
+    async ExecuteCommand(req: ExecuteCommandRequest): Promise<ExecuteCommandResponse> {
+        let rsp = await this.client.request<ExecuteCommandResponse>({
+            url: this.ExecuteCommandLink(req),
             method: "get",
             data: req,
             headers: {

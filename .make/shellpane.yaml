@@ -1,0 +1,143 @@
+categories:
+  - name: sequences
+    slug: sequences
+    color: "#ffa502"
+  - name: commands
+    slug: commands
+    color: "#ff6348"
+
+views:
+  - name: With shared input
+    category: sequences
+    sequence: with-shared-input
+  - name: With first failing
+    category: sequences
+    sequence: with-first-failing
+  - name: With second failing
+    category: sequences
+    sequence: with-second-failing
+  - name: With confirmation failing
+    category: sequences
+    sequence: with-confirmation
+  - name: With one step
+    category: sequences
+    sequence: with-one-step
+  - name: With one step with one input
+    category: sequences
+    sequence: with-one-step-with-one-input
+  - name: With long output
+    category: sequences
+    sequence: with-long-output
+
+sequences:
+  - slug: with-shared-input
+    steps:
+      - name: Print A
+        command: print-a
+      - name: Print AB
+        command: print-ab
+      - name: Print ABC
+        command: print-abc
+      - name: Print ABC
+        command: print-abc
+  - slug: with-first-failing
+    steps:
+      - name: Failing
+        command: failing
+      - name: ...
+        command: ...
+      - name: ...
+        command: ...
+  - slug: with-second-failing
+    steps:
+      - name: ...
+        command: ...
+      - name: Failing
+        command: failing
+      - name: ...
+        command: ...
+  - slug: with-confirmation
+    steps:
+      - name: ...
+        command: ...
+      - name: Enter confirm
+        command: enter-confirm
+      - name: ...
+        command: ...
+  - slug: with-one-step
+    steps:
+      - name: ...
+        command: ...
+  - slug: with-one-step-with-one-input
+    steps:
+      - name: Print A
+        command: print-a
+  - slug: with-long-output
+    steps:
+      - name: ...
+        command: ...
+      - name: Print long output
+        command: print-long-output
+      - name: Sleep 1s
+        command: sleep-1s
+      - name: ...
+        command: ...
+      - name: Sleep 1s
+        command: sleep-1s
+      - name: ...
+        command: ...
+      - name: Sleep 1s
+        command: sleep-1s
+      - name: ...
+        command: ...
+      - name: Sleep 1s
+        command: sleep-1s
+      - name: ...
+        command: ...
+      - name: Sleep 1s
+        command: sleep-1s
+      - name: ...
+        command: ...
+      - name: Sleep 1s
+        command: sleep-1s
+      - name: ...
+        command: ...
+
+commands:
+  - slug: print-a
+    command: echo $A && sleep 1
+    inputs:
+      - input: A
+        required: true
+  - slug: print-ab
+    inputs:
+      - input: A
+      - input: B
+    command: echo $A $B && sleep 1
+  - slug: print-abc
+    inputs:
+      - input: A
+      - input: B
+      - input: C
+    command: echo $A $B $C && sleep 1
+  - slug: failing
+    command: echo failed && exit 1
+  - slug: ...
+    command: echo ...
+  - slug: print-long-output
+    command: echo \\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.\\n.
+  - slug: sleep-1s
+    command: sleep 1s && echo slept 1s
+  - slug: enter-confirm
+    command: if [ $CONFIRM == "confirm" ]; then echo "confirmed ✅"; else echo "please enter confirm to proceed" && exit1; fi
+    inputs:
+      - input: CONFIRM
+
+inputs:
+  - slug: A
+  - slug: B
+  - slug: C
+  - slug: CONFIRM
+#    validate:
+#      required: true
+#      mustMatch: [azAz]

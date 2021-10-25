@@ -4,12 +4,10 @@ import (
 	"github.com/ppwfx/shellpane/internal/domain"
 )
 
-type RepositoryConfig struct {
-}
-
 type RepositoryOpts struct {
-	Config    RepositoryConfig
-	ViewSpecs []domain.ViewSpec
+	ViewConfigs     []domain.ViewConfig
+	CommandConfigs  map[string]domain.CommandConfig
+	CategoryConfigs []domain.CategoryConfig
 }
 
 type Repository struct {
@@ -22,16 +20,26 @@ func NewRepository(opts RepositoryOpts) Repository {
 	}
 }
 
-func (r Repository) GetViewSpecs() []domain.ViewSpec {
-	return r.opts.ViewSpecs
+func (r Repository) GetViewConfigs() []domain.ViewConfig {
+	return r.opts.ViewConfigs
 }
 
-func (r Repository) GetViewSpec(name string) (domain.ViewSpec, bool) {
-	for i := range r.opts.ViewSpecs {
-		if r.opts.ViewSpecs[i].Name == name {
-			return r.opts.ViewSpecs[i], true
+func (r Repository) GetCategoryConfigs() []domain.CategoryConfig {
+	return r.opts.CategoryConfigs
+}
+
+func (r Repository) GetViewConfig(name string) (domain.ViewConfig, bool) {
+	for i := range r.opts.ViewConfigs {
+		if r.opts.ViewConfigs[i].Name == name {
+			return r.opts.ViewConfigs[i], true
 		}
 	}
 
-	return domain.ViewSpec{}, false
+	return domain.ViewConfig{}, false
+}
+
+func (r Repository) GetCommandConfig(slug string) (domain.CommandConfig, bool) {
+	command, ok := r.opts.CommandConfigs[slug]
+
+	return command, ok
 }
