@@ -13,10 +13,10 @@ function test() {
 }
 
 function run-frontend() {
-  (cd internal/communication/web && yarn install && REACT_APP_SHELLPANE_HOST=http://localhost:8888 yarn start)
+  (cd internal/communication/web && yarn install && REACT_APP_SHELLPANE_HOST=http://localhost:8888 REACT_APP_CATEGORIES_CSS_HOST=http://localhost:8888 yarn start)
 }
 
 function build() {
-  (cd internal/communication/web && yarn install && yarn build)
+  (cd internal/communication/web && yarn install && REACT_APP_CATEGORIES_CSS_HOST="" yarn build)
   go build -o shellpane cmd/main.go
 }

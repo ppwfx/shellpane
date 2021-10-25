@@ -163,6 +163,7 @@ a:hover {
 }
 
 .views__view__output {
+  white-space: pre;
   resize: none;
   height: 100%;
   display: block;
@@ -170,7 +171,6 @@ a:hover {
   padding-left: 5px;
   font-weight: bold;
   width: 100%;
-  white-space: pre-line;
   border: 5px solid #fff;
 }
 
