@@ -32,9 +32,9 @@ func getConfig(args []string) (bootstrap.ContainerConfig, error) {
 	fs.StringVar(&conf.Communication.Router.BasicAuth.Username, "basic-auth-username", "", "optional: specify a basic auth username")
 	fs.StringVar(&conf.Communication.Router.BasicAuth.Password, "basic-auth-password", "info", "optional: specify a basic auth password")
 
-	fs.StringVar(&conf.Persistence.ViewSpecsYAMLPath, "specs-yaml-path", "", "path to specs yaml")
+	fs.StringVar(&conf.ShellpaneYAMLPath, "shellpane-yaml-path", "", "path to specs yaml")
 	var specsYAML string
-	fs.StringVar(&specsYAML, "specs-yaml", "", "specs as yaml")
+	fs.StringVar(&specsYAML, "shellpane-yaml", "", "specs as yaml")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -42,9 +42,9 @@ func getConfig(args []string) (bootstrap.ContainerConfig, error) {
 	}
 
 	if specsYAML != "" {
-		err = yaml.Unmarshal([]byte(specsYAML), &conf.Persistence.ViewSpecs)
+		err = yaml.Unmarshal([]byte(specsYAML), &conf.ShellpaneConfig)
 		if err != nil {
-			return conf, errors.Wrapf(err, "failed to unmarshal specs-yaml=%v", specsYAML)
+			return conf, errors.Wrapf(err, "failed to unmarshal shellpane-yaml=%v", specsYAML)
 		}
 	}
 

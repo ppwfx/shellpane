@@ -1,29 +1,21 @@
 # shellpane
 
 - BE
-    - specs.yaml -> shellpane.yaml
-    - specs.yaml makes specs a field
-    - add input validation
-      
     - default values
     - add view description
       - view add steps, e.g. to verify and confirm
-    - add tags
-      - should be possible to define a color
     - output stderr
     - add tests
     - add width
     - permissions
+  
     - steps
+      - error highlight
     
 - FE
-    - hide command
     - description
-    - scroll to top after command execution
     - autocomplete
     - download extension
-    - disable input when loading
-    - update indicator
     - always print stdout and stderr!
     - print statuscode
 

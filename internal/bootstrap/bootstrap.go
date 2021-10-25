@@ -31,10 +31,12 @@ const (
 )
 
 type ContainerConfig struct {
-	Logger        logutil.LoggerConfig
-	Business      business.Config
-	Communication communication.Config
-	Persistence   persistence.Config
+	Logger            logutil.LoggerConfig
+	Business          business.Config
+	Communication     communication.Config
+	ShellpaneYAMLPath string
+	FS                string
+	ShellpaneConfig   *ShellpaneConfig
 }
 
 type ContainerOpts struct {
@@ -47,19 +49,21 @@ type namedCloser struct {
 }
 
 type Container struct {
-	opts         ContainerOpts
-	closers      []namedCloser
-	handler      *business.Handler
-	router       http.Handler
-	httpServer   *http.Server
-	httpListener net.Listener
-	httpClient   *http.Client
-	roundTripper http.RoundTripper
-	logger       *zap.SugaredLogger
-	client       *communication.Client
-	repository   *persistence.Repository
-	viewSpecs    []domain.ViewSpec
-	fs           afero.Fs
+	opts            ContainerOpts
+	closers         []namedCloser
+	handler         *business.Handler
+	router          http.Handler
+	httpServer      *http.Server
+	httpListener    net.Listener
+	httpClient      *http.Client
+	roundTripper    http.RoundTripper
+	logger          *zap.SugaredLogger
+	client          *communication.Client
+	repository      *persistence.Repository
+	viewConfigs     []domain.ViewConfig
+	categoryConfigs []domain.CategoryConfig
+	commandsConfig  map[string]domain.CommandConfig
+	fs              afero.Fs
 }
 
 func NewContainer(opts ContainerOpts) Container {
@@ -110,9 +114,15 @@ func (c Container) GetRouter(ctx context.Context) (http.Handler, error) {
 		return nil, errors.Wrap(err, "failed to get handler")
 	}
 
+	_, categoriesConfig, _, err := c.GetConfigs(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get config")
+	}
+
 	router := communication.NewRouter(communication.RouterOpts{
-		Config:  c.opts.Config.Communication.Router,
-		Handler: h,
+		CategoryConfigs: categoriesConfig,
+		Config:          c.opts.Config.Communication.Router,
+		Handler:         h,
 	})
 
 	logger, err := c.GetLogger(ctx)
@@ -276,14 +286,15 @@ func (c *Container) GetRepository(ctx context.Context) (persistence.Repository, 
 		return *c.repository, nil
 	}
 
-	viewSpecs, err := c.GetViewSpecs(ctx)
+	viewConfigs, categoryConfigs, commandsConfigs, err := c.GetConfigs(ctx)
 	if err != nil {
 		return persistence.Repository{}, errors.Wrapf(err, "failed to get view specs")
 	}
 
 	repository := persistence.NewRepository(persistence.RepositoryOpts{
-		Config:    c.opts.Config.Persistence.Repository,
-		ViewSpecs: viewSpecs,
+		ViewConfigs:     viewConfigs,
+		CommandConfigs:  commandsConfigs,
+		CategoryConfigs: categoryConfigs,
 	})
 
 	c.repository = &repository
@@ -291,42 +302,47 @@ func (c *Container) GetRepository(ctx context.Context) (persistence.Repository, 
 	return *c.repository, nil
 }
 
-func (c *Container) GetViewSpecs(ctx context.Context) ([]domain.ViewSpec, error) {
-	if c.viewSpecs != nil {
-		return c.viewSpecs, nil
+func (c *Container) GetConfigs(ctx context.Context) ([]domain.ViewConfig, []domain.CategoryConfig, map[string]domain.CommandConfig, error) {
+	if c.viewConfigs != nil {
+		return c.viewConfigs, c.categoryConfigs, c.commandsConfig, nil
 	}
 
 	fs, err := c.GetFS(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get filesystem")
+		return nil, nil, nil, errors.Wrapf(err, "failed to get filesystem")
 	}
 
+	var config ShellpaneConfig
 	switch {
-	case len(c.opts.Config.Persistence.ViewSpecs) != 0:
-		c.viewSpecs = c.opts.Config.Persistence.ViewSpecs
-	case c.opts.Config.Persistence.ViewSpecsYAMLPath != "":
-		f, err := fs.Open(c.opts.Config.Persistence.ViewSpecsYAMLPath)
+	case c.opts.Config.ShellpaneConfig != nil:
+		config = *c.opts.Config.ShellpaneConfig
+	case c.opts.Config.ShellpaneYAMLPath != "":
+		f, err := fs.Open(c.opts.Config.ShellpaneYAMLPath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to open file=%v", c.opts.Config.Persistence.ViewSpecsYAMLPath)
+			return nil, nil, nil, errors.Wrapf(err, "failed to open file=%v", c.opts.Config.ShellpaneYAMLPath)
 		}
 
 		b, err := ioutil.ReadAll(f)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read file=%v", c.opts.Config.Persistence.ViewSpecsYAMLPath)
+			return nil, nil, nil, errors.Wrapf(err, "failed to read file=%v", c.opts.Config.ShellpaneYAMLPath)
 		}
 
-		err = yaml.Unmarshal(b, &c.viewSpecs)
+		err = yaml.Unmarshal(b, &config)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to yaml unmarshal file=%v with content=%v", c.opts.Config.Persistence.ViewSpecsYAMLPath, string(b))
+			return nil, nil, nil, errors.Wrapf(err, "failed to yaml unmarshal file=%v content=%v", c.opts.Config.ShellpaneYAMLPath, string(b))
 		}
+	default:
+		return nil, nil, nil, errors.New("no config present")
 	}
 
-	err = business.ValidateViewSpecs(c.viewSpecs)
+	err = ValidateShellpaneConfig(config)
 	if err != nil {
-		return c.viewSpecs, errors.Wrapf(err, "failed to validate view specs")
+		return nil, nil, nil, errors.Wrapf(err, "failed to validate shellpane config")
 	}
 
-	return c.viewSpecs, nil
+	c.viewConfigs, c.categoryConfigs, c.commandsConfig = generateConfigs(config)
+
+	return c.viewConfigs, c.categoryConfigs, c.commandsConfig, nil
 }
 
 func (c *Container) GetFS(ctx context.Context) (afero.Fs, error) {
@@ -334,7 +350,7 @@ func (c *Container) GetFS(ctx context.Context) (afero.Fs, error) {
 		return c.fs, nil
 	}
 
-	switch c.opts.Config.Persistence.FS {
+	switch c.opts.Config.FS {
 	case FSMemory:
 		c.fs = afero.NewMemMapFs()
 	case FSOS:

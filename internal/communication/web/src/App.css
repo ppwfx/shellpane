@@ -6,11 +6,19 @@ body {
   font-family: 'IBM Plex Mono', monospace;
   font-weight: bold;
   font-size: 12px;
+  background-color: #fff;
+}
+
+html, body, #root, .App
+{
+  height: 100%;
+  min-height: 100%;
 }
 
 .App {
   padding: 15px;
-  padding-top: 0px;
+  padding-top: 96px;
+  margin-bottom: 30px;
   font-family: 'IBM Plex Mono', monospace;
 }
 
@@ -19,14 +27,14 @@ body {
   pointer-events: none;
 }
 
+a:hover {
+  color: currentColor;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
   }
-}
-
-input {
-  outline-color: #ffae18;
 }
 
 .App-header {
@@ -56,24 +64,49 @@ input {
 .header {
   font-size: 20px;
   padding: 15px;
-  padding-left: 5px;
+  padding-left: 25px;
   font-weight: bold;
   width: 100%;
+  background: #fff;
+  position: fixed;
+  z-index: 10;
+  -webkit-box-shadow: 0 -20px 25px #888888;
+  -moz-box-shadow: 0 -20px 25px #888888;
+  box-shadow: 0 -20px 25px #888888;
+}
+
+.header__category__category {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.header__categories__category--selected, .header__categories__category--selected a:hover {
+  display: none;
 }
 
 .views__view {
-  border: 3px solid #ddd;
-  border-radius: 5px;
+  /*border: 3px solid #ddd;*/
+  box-shadow: 0px 10px 30px 0px rgba(0, 0, 0, 0.07);
+  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 10px;
   height: 406px;
-  background: #f3f3f3;
+  background: #fff;
 }
 
 .views__view__header {
   padding: 5px;
   padding-left: 10px;
+  padding-top: 8px;
   font-weight: bold;
-  height: 27px;
+  color: #777;
+  font-size: 13px;
+  height: 30px;
   background: #ffffff;
+}
+
+.views__view__step--disabled a, .views__view__step--disabled a:hover {
+  color: #ddd;
+  pointer-events: none;
 }
 
 .views__view__body {
@@ -89,12 +122,8 @@ input {
   background: rgba(255, 174, 24, 0.0);
 }
 
-.views__view__body::-webkit-scrollbar-thumb {
-  background: #ffae18;
-}
-
 .views__view__body::-webkit-scrollbar-thumb:hover {
-  background: #fff;
+  background: rgba(255, 174, 24, 0.0);
 }
 
 .views__view__command {
@@ -120,7 +149,6 @@ input {
   padding: 5px;
   padding-left: 10px;
   background: #fff;
-  border-bottom: 3px solid #eee;
   font-weight: bold;
   height: 30px;
 }
@@ -129,41 +157,21 @@ input {
   color: #dddddd;
 }
 
-.views__view__header--active a {
-  color: #ffae18;
+.views__view__step__header:nth-child(1) {
+  height: 31px;
+  padding-top: 6px;
 }
-
-.views__view__step__header a {
-  color: #dddddd;
-}
-
-.views__view__step--active .views__view__step__header a {
-  color: #ffae18;
-}
-
-/*.views__view__step__header:nth-child(1) {*/
-/*  border-top: none;*/
-/*}*/
 
 .views__view__output {
   resize: none;
   height: 100%;
   display: block;
-  padding: 8px;
   min-height: 28px;
-  padding-left: 10px;
+  padding-left: 5px;
   font-weight: bold;
   width: 100%;
   white-space: pre-line;
-
-  border: solid 0px #ffae18;
-}
-
-.views__view__output--highlight {
-  border: solid 3px #f3f3f3;
-  padding: 2px;
-  /*padding-left: 5px;*/
-  transition: border-color 1s ease;
+  border: 5px solid #fff;
 }
 
 .views__view__header__name {
@@ -175,14 +183,6 @@ input {
   padding-right: 5px;
   padding-top: 2px;
 }
-
-.loader01 {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #ffae18;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: loader-rotate 1s linear infinite;}
 
 @keyframes loader-rotate {
   0% {
@@ -209,15 +209,16 @@ input {
   margin-right: 5px;
   font-weight: bold;
   width: 80px;
-  background: #ffeac4;
 }
 
 .view__env__input:disabled {
-  background: #afafaf;
+  background: #ddd;
 }
 
 .view__env__input:focus {
   width: 150px;
+  z-index: 1;
+  position: relative;
 }
 
 .ant-message-error .anticon {
