@@ -27,7 +27,7 @@ func ValidateShellpaneConfig(config ShellpaneConfig) error {
 
 	err = validateSequences(definedCommands, config.Sequences)
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate commands")
+		return errors.Wrapf(err, "failed to validate sequences")
 	}
 
 	definedSequences := map[string]struct{}{}
@@ -47,7 +47,149 @@ func ValidateShellpaneConfig(config ShellpaneConfig) error {
 
 	err = validateViews(definedCommands, definedSequences, definedCategories, config.Views)
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate commands")
+		return errors.Wrapf(err, "failed to validate views")
+	}
+
+	definedViews := map[string]struct{}{}
+	for i := range config.Views {
+		definedViews[config.Views[i].Slug] = struct{}{}
+	}
+
+	err = validateRoles(definedCategories, definedViews, config.Roles)
+	if err != nil {
+		return errors.Wrapf(err, "failed to validate roles")
+	}
+
+	definedRoles := map[string]struct{}{}
+	for i := range config.Roles {
+		definedRoles[config.Roles[i].Slug] = struct{}{}
+	}
+
+	err = validateGroups(definedRoles, config.Groups)
+	if err != nil {
+		return errors.Wrapf(err, "failed to validate groups")
+	}
+
+	definedGroups := map[string]struct{}{}
+	for i := range config.Groups {
+		definedGroups[config.Groups[i].Slug] = struct{}{}
+	}
+
+	err = validateUsers(definedGroups, config.Users)
+	if err != nil {
+		return errors.Wrapf(err, "failed to validate users")
+	}
+
+	return nil
+}
+
+func validateUsers(definedGroups map[string]struct{}, users []UserConfig) error {
+	for i := range users {
+		err := validateUser(definedGroups, users[i])
+		if err != nil {
+			return errors.Wrapf(err, "failed to validate user id=%v", users[i].ID)
+		}
+	}
+
+	seenIDs := map[string]struct{}{}
+	for i := range users {
+		_, seen := seenIDs[users[i].ID]
+		if seen {
+			return errors.Errorf("duplicate id=%v", users[i].ID)
+		}
+		seenIDs[users[i].ID] = struct{}{}
+	}
+
+	return nil
+}
+
+func validateUser(definedGroups map[string]struct{}, user UserConfig) error {
+	if user.ID == "" {
+		return errors.New("id is empty")
+	}
+
+	for i := range user.Groups {
+		_, defined := definedGroups[user.Groups[i].GroupSlug]
+		if !defined {
+			return errors.Errorf("undefined group=%v", user.Groups[i].GroupSlug)
+		}
+	}
+
+	return nil
+}
+
+func validateGroups(definedRoles map[string]struct{}, groups []GroupConfig) error {
+	for i := range groups {
+		err := validateGroup(definedRoles, groups[i])
+		if err != nil {
+			return errors.Wrapf(err, "failed to validate group slug=%v", groups[i].Slug)
+		}
+	}
+
+	seenSlugs := map[string]struct{}{}
+	for i := range groups {
+		_, seen := seenSlugs[groups[i].Slug]
+		if seen {
+			return errors.Errorf("duplicate slug=%v", groups[i].Slug)
+		}
+		seenSlugs[groups[i].Slug] = struct{}{}
+	}
+
+	return nil
+}
+
+func validateGroup(definedRoles map[string]struct{}, group GroupConfig) error {
+	if group.Slug == "" {
+		return errors.New("slug is empty")
+	}
+
+	for i := range group.Roles {
+		_, defined := definedRoles[group.Roles[i].RoleSlug]
+		if !defined {
+			return errors.Errorf("undefined role=%v", group.Roles[i].RoleSlug)
+		}
+	}
+
+	return nil
+}
+
+func validateRoles(definedCategories map[string]struct{}, definedViews map[string]struct{}, roles []RoleConfig) error {
+	for i := range roles {
+		err := validateRole(definedCategories, definedViews, roles[i])
+		if err != nil {
+			return errors.Wrapf(err, "failed to validate role slug=%v", roles[i].Slug)
+		}
+	}
+
+	seenSlugs := map[string]struct{}{}
+	for i := range roles {
+		_, seen := seenSlugs[roles[i].Slug]
+		if seen {
+			return errors.Errorf("duplicate slug=%v", roles[i].Slug)
+		}
+		seenSlugs[roles[i].Slug] = struct{}{}
+	}
+
+	return nil
+}
+
+func validateRole(definedCategories map[string]struct{}, definedViews map[string]struct{}, role RoleConfig) error {
+	if role.Slug == "" {
+		return errors.New("slug is empty")
+	}
+
+	for i := range role.Views {
+		_, defined := definedViews[role.Views[i].ViewSlug]
+		if !defined {
+			return errors.Errorf("undefined view=%v", role.Views[i].ViewSlug)
+		}
+	}
+
+	for i := range role.Categories {
+		_, defined := definedCategories[role.Categories[i].CategorySlug]
+		if !defined {
+			return errors.Errorf("undefined category=%v", role.Categories[i].CategorySlug)
+		}
 	}
 
 	return nil

@@ -40,19 +40,29 @@ type CommandOutput struct {
 }
 
 func (h Handler) ExecuteCommand(ctx context.Context, req ExecuteCommandRequest) (ExecuteCommandResponse, error) {
-	view, ok := h.opts.Repository.GetCommandConfig(req.Slug)
+	userID := UserID(ctx)
+	if userID != "" {
+		allowedCommands := h.opts.Repository.GetUserAllowedCommands()[userID]
+
+		_, ok := allowedCommands[req.Slug]
+		if !ok {
+			return ExecuteCommandResponse{}, errutil.Unauthorized(errors.Errorf("user is not allowed to execute command user=%v command=%v", userID, req.Slug))
+		}
+	}
+
+	command, ok := h.opts.Repository.GetCommandConfig(req.Slug)
 	if !ok {
 		return ExecuteCommandResponse{}, errors.Wrapf(errutil.NotFound(errutil.Nil(), "Command", req.Slug), "failed to find command slug=%v", req.Slug)
 	}
 
-	//err := validateExecuteCommandRequest(view, req)
+	//err := validateExecuteCommandRequest(command, req)
 	//if err != nil {
 	//	return ExecuteCommandResponse{}, errors.Wrapf(err, "failed to validate request")
 	//}
 
-	o, err := executeCommand(ctx, view.Command, req.Inputs)
+	o, err := executeCommand(ctx, command.Command, req.Inputs)
 	if err != nil {
-		return ExecuteCommandResponse{}, errors.Wrapf(err, "failed to generate view")
+		return ExecuteCommandResponse{}, errors.Wrapf(err, "failed to execute command")
 	}
 
 	return ExecuteCommandResponse{Output: o}, nil

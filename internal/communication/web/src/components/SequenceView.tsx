@@ -20,7 +20,7 @@ export const SequenceView = (props: SequenceViewProps) => {
     const stepsCount = props.sequenceConfig.Steps.length
 
     let seenInputs: { [name: string]: boolean } = {}
-    const inputs: client.CommandInputConfig[][] = props.sequenceConfig.Steps.map((s: client.StepConfig, i: number) => {
+    const inputConfigs: client.CommandInputConfig[][] = props.sequenceConfig.Steps.map((s: client.StepConfig, i: number) => {
         let stepInputs: client.CommandInputConfig[] = []
 
         if (!s.Command.Inputs) {
@@ -101,13 +101,10 @@ export const SequenceView = (props: SequenceViewProps) => {
                 // @ts-ignore
                 firstInputRefs.current[stepIndex].current.focus()
             }
-        }, 100)
+        }, 0)
     }
 
     useEffect(() => {
-        let inputConfigs: client.CommandInputConfig[] | undefined = undefined
-
-        inputConfigs = props.sequenceConfig.Steps[currentStepIndex].Command.Inputs
         let inputValues = toInputValues(props.sequenceConfig.Steps[currentStepIndex].Command.Inputs, values)
 
         let executeCommandRspsCopy = [...executeCommandRsps]
@@ -116,14 +113,14 @@ export const SequenceView = (props: SequenceViewProps) => {
             executeCommandRspsCopy = [...Array(props.sequenceConfig.Steps.length)]
 
             let firstStepValuesOnly: { [name: string]: string } = {}
-            inputs[0].forEach((commandInputConfig => {
+            inputConfigs[0].forEach((commandInputConfig => {
                 firstStepValuesOnly[commandInputConfig.Input.Slug] = values[commandInputConfig.Input.Slug]
             }))
 
             setValues(firstStepValuesOnly)
         }
 
-        if (inputConfigs && inputConfigs.length !== 0 && inputValues?.length === 0) {
+        if (inputConfigs[currentStepIndex] && inputConfigs[currentStepIndex].length !== 0 && inputValues?.length === 0) {
             setIsLoading(false);
 
             return
@@ -145,10 +142,10 @@ export const SequenceView = (props: SequenceViewProps) => {
             if (viewOutputRsp.Output.ExitCode == 0) {
                 if (currentStepIndexCopy + 1 >= stepsCount) {
                     currentStepIndexCopy = 0
-                    if (inputs[0].length != 0) {
+                    if (inputConfigs[0].length != 0) {
                         let valuesCopy = Object.assign({}, values)
 
-                        inputs[0].forEach((commandInputConfig => {
+                        inputConfigs[0].forEach((commandInputConfig => {
                             valuesCopy[commandInputConfig.Input.Slug] = ""
                         }))
 
@@ -175,10 +172,10 @@ export const SequenceView = (props: SequenceViewProps) => {
 
             handleFocus(currentStepIndexCopy)
 
-            if (viewOutputRsp.Output.ExitCode == 0 && currentStepIndexCopy && (!props.sequenceConfig.Steps[currentStepIndexCopy].Command.Inputs || props.sequenceConfig.Steps[currentStepIndexCopy].Command.Inputs.length === 0)) {
+            if (viewOutputRsp.Output.ExitCode == 0 && currentStepIndexCopy && (!inputConfigs[currentStepIndexCopy] || inputConfigs[currentStepIndexCopy].length === 0)) {
                 setTimeout(() => {
                     refresh()
-                }, 500)
+                }, 0)
             }
         })().catch((reason: any) => {
             message.error('failed to get step output: ' + reason);
@@ -234,8 +231,8 @@ export const SequenceView = (props: SequenceViewProps) => {
                                     <a href={props.client.ExecuteCommandLink(rawReq)} target="_blank" rel="noreferrer"
                                        download={filename}>Download </a>
                                 </span>
-                                    {inputs[stepIndex] ?
-                                        <ViewEnv inputConfigs={inputs[stepIndex]}
+                                    {inputConfigs[stepIndex] ?
+                                        <ViewEnv inputConfigs={inputConfigs[stepIndex]}
                                                  inputValues={inputValues}
                                                  ref={firstInputRefs.current[stepIndex]}
                                                  setInputValue={(k, v: string) => setStepInputValue(stepIndex, k, v)}

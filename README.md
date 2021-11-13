@@ -8,6 +8,7 @@
     - add tests
     - add width
     - permissions
+    - dump request
   
     - steps
       - error highlight
@@ -18,6 +19,7 @@
     - download extension
     - always print stdout and stderr!
     - print statuscode
+    - horizontal scrollbar width
 
 
 ```

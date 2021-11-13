@@ -49,21 +49,25 @@ type namedCloser struct {
 }
 
 type Container struct {
-	opts            ContainerOpts
-	closers         []namedCloser
-	handler         *business.Handler
-	router          http.Handler
-	httpServer      *http.Server
-	httpListener    net.Listener
-	httpClient      *http.Client
-	roundTripper    http.RoundTripper
-	logger          *zap.SugaredLogger
-	client          *communication.Client
-	repository      *persistence.Repository
-	viewConfigs     []domain.ViewConfig
-	categoryConfigs []domain.CategoryConfig
-	commandsConfig  map[string]domain.CommandConfig
-	fs              afero.Fs
+	opts              ContainerOpts
+	closers           []namedCloser
+	handler           *business.Handler
+	router            http.Handler
+	httpServer        *http.Server
+	httpListener      net.Listener
+	httpClient        *http.Client
+	roundTripper      http.RoundTripper
+	logger            *zap.SugaredLogger
+	client            *communication.Client
+	repository        *persistence.Repository
+	userConfigs       map[string]domain.UserConfig
+	viewConfigs       []domain.ViewConfig
+	categoryConfigs   []domain.CategoryConfig
+	commandsConfig    map[string]domain.CommandConfig
+	allowedCategories map[string]map[string]struct{}
+	allowedViews      map[string]map[string]struct{}
+	allowedCommands   map[string]map[string]struct{}
+	fs                afero.Fs
 }
 
 func NewContainer(opts ContainerOpts) Container {
@@ -114,7 +118,7 @@ func (c Container) GetRouter(ctx context.Context) (http.Handler, error) {
 		return nil, errors.Wrap(err, "failed to get handler")
 	}
 
-	_, categoriesConfig, _, err := c.GetConfigs(ctx)
+	_, _, categoriesConfig, _, _, _, _, err := c.GetConfigs(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get config")
 	}
@@ -136,6 +140,10 @@ func (c Container) GetRouter(ctx context.Context) (http.Handler, error) {
 	if c.opts.Config.Communication.Router.BasicAuth.Username != "" &&
 		c.opts.Config.Communication.Router.BasicAuth.Password != "" {
 		router = communication.WithBasicAuthMiddleware(router, c.opts.Config.Communication.Router.BasicAuth)
+	}
+
+	if c.opts.Config.Communication.UserIDHeader != "" {
+		router = communication.WithUserIDMiddleware(router, c.opts.Config.Communication.UserIDHeader)
 	}
 
 	router = communication.CorsMiddleware(router)
@@ -286,15 +294,19 @@ func (c *Container) GetRepository(ctx context.Context) (persistence.Repository, 
 		return *c.repository, nil
 	}
 
-	viewConfigs, categoryConfigs, commandsConfigs, err := c.GetConfigs(ctx)
+	userConfigs, viewConfigs, categoryConfigs, commandsConfigs, allowedCategories, allowedCommands, allowedViews, err := c.GetConfigs(ctx)
 	if err != nil {
-		return persistence.Repository{}, errors.Wrapf(err, "failed to get view specs")
+		return persistence.Repository{}, errors.Wrapf(err, "failed to get configs")
 	}
 
 	repository := persistence.NewRepository(persistence.RepositoryOpts{
-		ViewConfigs:     viewConfigs,
-		CommandConfigs:  commandsConfigs,
-		CategoryConfigs: categoryConfigs,
+		UserConfigs:           userConfigs,
+		ViewConfigs:           viewConfigs,
+		CommandConfigs:        commandsConfigs,
+		CategoryConfigs:       categoryConfigs,
+		UserAllowedCategories: allowedCategories,
+		UserAllowedViews:      allowedViews,
+		UserAllowedCommands:   allowedCommands,
 	})
 
 	c.repository = &repository
@@ -302,14 +314,23 @@ func (c *Container) GetRepository(ctx context.Context) (persistence.Repository, 
 	return *c.repository, nil
 }
 
-func (c *Container) GetConfigs(ctx context.Context) ([]domain.ViewConfig, []domain.CategoryConfig, map[string]domain.CommandConfig, error) {
+func (c *Container) GetConfigs(ctx context.Context) (
+	map[string]domain.UserConfig,
+	[]domain.ViewConfig,
+	[]domain.CategoryConfig,
+	map[string]domain.CommandConfig,
+	map[string]map[string]struct{},
+	map[string]map[string]struct{},
+	map[string]map[string]struct{},
+	error,
+) {
 	if c.viewConfigs != nil {
-		return c.viewConfigs, c.categoryConfigs, c.commandsConfig, nil
+		return c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedCommands, c.allowedViews, nil
 	}
 
 	fs, err := c.GetFS(ctx)
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to get filesystem")
+		return nil, nil, nil, nil, nil, nil, nil, errors.Wrapf(err, "failed to get filesystem")
 	}
 
 	var config ShellpaneConfig
@@ -319,30 +340,30 @@ func (c *Container) GetConfigs(ctx context.Context) ([]domain.ViewConfig, []doma
 	case c.opts.Config.ShellpaneYAMLPath != "":
 		f, err := fs.Open(c.opts.Config.ShellpaneYAMLPath)
 		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "failed to open file=%v", c.opts.Config.ShellpaneYAMLPath)
+			return nil, nil, nil, nil, nil, nil, nil, errors.Wrapf(err, "failed to open file=%v", c.opts.Config.ShellpaneYAMLPath)
 		}
 
 		b, err := ioutil.ReadAll(f)
 		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "failed to read file=%v", c.opts.Config.ShellpaneYAMLPath)
+			return nil, nil, nil, nil, nil, nil, nil, errors.Wrapf(err, "failed to read file=%v", c.opts.Config.ShellpaneYAMLPath)
 		}
 
 		err = yaml.Unmarshal(b, &config)
 		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "failed to yaml unmarshal file=%v content=%v", c.opts.Config.ShellpaneYAMLPath, string(b))
+			return nil, nil, nil, nil, nil, nil, nil, errors.Wrapf(err, "failed to yaml unmarshal file=%v content=%v", c.opts.Config.ShellpaneYAMLPath, string(b))
 		}
 	default:
-		return nil, nil, nil, errors.New("no config present")
+		return nil, nil, nil, nil, nil, nil, nil, errors.New("no config present")
 	}
 
 	err = ValidateShellpaneConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to validate shellpane config")
+		return nil, nil, nil, nil, nil, nil, nil, errors.Wrapf(err, "failed to validate shellpane config")
 	}
 
-	c.viewConfigs, c.categoryConfigs, c.commandsConfig = generateConfigs(config)
+	c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedCommands, c.allowedViews = generateConfigs(config)
 
-	return c.viewConfigs, c.categoryConfigs, c.commandsConfig, nil
+	return c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedCommands, c.allowedViews, nil
 }
 
 func (c *Container) GetFS(ctx context.Context) (afero.Fs, error) {

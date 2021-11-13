@@ -3,11 +3,29 @@ package communication
 import (
 	"net/http"
 	"strings"
+
+	"github.com/ppwfx/shellpane/internal/business"
 )
 
 type BasicAuthConfig struct {
 	Username string
 	Password string
+}
+
+func WithUserIDMiddleware(handler http.Handler, userIDHeader string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get(userIDHeader)
+		if userID == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ctx := business.WithUserID(r.Context(), userID)
+
+		r = r.WithContext(ctx)
+
+		handler.ServeHTTP(w, r)
+	}
 }
 
 func WithBasicAuthMiddleware(handler http.Handler, config BasicAuthConfig) http.HandlerFunc {
@@ -44,5 +62,3 @@ func CorsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
-
