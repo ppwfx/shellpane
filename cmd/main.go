@@ -54,7 +54,7 @@ func getConfig(args []string) (bootstrap.ContainerConfig, error) {
 func main() {
 	config, err := getConfig(os.Args[1:])
 	if err != nil {
-		log.Fatalf("failed to get configig: %v", err.Error())
+		log.Fatalf("failed to get config: %v", err.Error())
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

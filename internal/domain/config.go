@@ -1,6 +1,23 @@
 package domain
 
+type UserConfig struct {
+	ID     string
+	Groups []GroupConfig
+}
+
+type GroupConfig struct {
+	Slug  string
+	Roles []RoleConfig
+}
+
+type RoleConfig struct {
+	Slug       string
+	Views      []ViewConfig
+	Categories []CategoryConfig
+}
+
 type ViewConfig struct {
+	Slug     string
 	Name     string
 	Command  CommandConfig
 	Sequence SequenceConfig
@@ -11,6 +28,7 @@ type CategoryConfig struct {
 	Slug  string
 	Name  string
 	Color string
+	Views []ViewConfig
 }
 
 type SequenceConfig struct {

@@ -1,3 +1,21 @@
+users:
+  - id: xyz@abc.com
+    groups:
+      - group: backend-engineers
+
+groups:
+  - slug: backend-engineers
+    roles:
+      - role: sequences-viewer
+
+roles:
+  - slug: sequences-viewer
+    views:
+      - view: with-shared-input
+      - view: with-first-failing
+    categories:
+      - category: sequences
+
 categories:
   - name: sequences
     slug: sequences
@@ -7,25 +25,32 @@ categories:
     color: "#ff6348"
 
 views:
-  - name: With shared input
+  - slug: with-shared-input
+    name: With shared input
     category: sequences
     sequence: with-shared-input
-  - name: With first failing
+  - slug: with-first-failing
+    name: With first failing
     category: sequences
     sequence: with-first-failing
-  - name: With second failing
+  - slug: with-second-failing
+    name: With second failing
     category: sequences
     sequence: with-second-failing
-  - name: With confirmation failing
+  - slug: with-confirmation-failing
+    name: With confirmation failing
     category: sequences
     sequence: with-confirmation
-  - name: With one step
+  - slug: with-one-step
+    name: With one step
     category: sequences
     sequence: with-one-step
-  - name: With one step with one input
+  - slug: with-one-step-with-one-input
+    name: With one step with one input
     category: sequences
     sequence: with-one-step-with-one-input
-  - name: With long output
+  - slug: with-long-output
+    name: With long output
     category: sequences
     sequence: with-long-output
 

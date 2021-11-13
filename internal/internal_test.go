@@ -25,16 +25,6 @@ var baseConfig = bootstrap.ContainerConfig{
 	Communication: communication.Config{
 		Client: communication.ClientConfig{
 			Host: "http://bufconn",
-			BasicAuth: communication.BasicAuthConfig{
-				Username: "username",
-				Password: "password",
-			},
-		},
-		Router: communication.RouterConfig{
-			BasicAuth: communication.BasicAuthConfig{
-				Username: "username",
-				Password: "password",
-			},
 		},
 		HttpAddr: "bufconn",
 		Listener: bootstrap.ListenerBufconn,
@@ -98,7 +88,135 @@ func Test_Web(t *testing.T) {
 		assert.True(t, strings.Contains(string(b), ".background--"))
 	})
 
-	t.Run("get web without basic auth", func(t *testing.T) {
+	errs := c.Close(ctx)
+	require.Empty(t, errs)
+}
+
+func Test_BasicAuth(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	config := baseConfig
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Categories: []bootstrap.CategoryConfig{
+			{
+				Slug:  "A",
+				Name:  "A",
+				Color: "A",
+			},
+		},
+	}
+
+	config.Communication.Client.BasicAuth = communication.BasicAuthConfig{
+		Username: "username",
+		Password: "password",
+	}
+
+	config.Communication.Router.BasicAuth = communication.BasicAuthConfig{
+		Username: "username",
+		Password: "password",
+	}
+
+	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+		Config: config,
+	})
+
+	go func() {
+		srv, err := c.GetHTTPServer(ctx)
+		require.NoError(t, err)
+
+		l, err := c.GetHTTPListener(ctx)
+		require.NoError(t, err)
+
+		err = srv.Serve(l)
+		//require.NoError(t, err)
+	}()
+
+	httpClient, err := c.GetHTTPClient(ctx)
+	require.NoError(t, err)
+
+	t.Run("get with basic auth", func(t *testing.T) {
+		resp, err := httpClient.Get(config.Communication.Client.Host + "/")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		assert.True(t, strings.Contains(string(b), "</html>"))
+	})
+
+	t.Run("get without basic auth", func(t *testing.T) {
+		roundtripper, err := c.GetRoundTripper(ctx)
+		require.NoError(t, err)
+
+		httpClient := &http.Client{Transport: roundtripper}
+
+		resp, err := httpClient.Get(config.Communication.Client.Host + "/")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	})
+
+	errs := c.Close(ctx)
+	require.Empty(t, errs)
+}
+
+func Test_UserIDHeader(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	config := baseConfig
+
+	const userIDHeader = "user-id"
+	config.Communication.UserIDHeader = userIDHeader
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Categories: []bootstrap.CategoryConfig{
+			{
+				Slug:  "A",
+				Name:  "A",
+				Color: "A",
+			},
+		},
+	}
+
+	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+		Config: config,
+	})
+
+	go func() {
+		srv, err := c.GetHTTPServer(ctx)
+		require.NoError(t, err)
+
+		l, err := c.GetHTTPListener(ctx)
+		require.NoError(t, err)
+
+		err = srv.Serve(l)
+		//require.NoError(t, err)
+	}()
+
+	t.Run("get web with user id header", func(t *testing.T) {
+		roundtripper, err := c.GetRoundTripper(ctx)
+		require.NoError(t, err)
+
+		httpClient := &http.Client{Transport: roundtripper}
+		r, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Communication.Client.Host+"/", nil)
+		require.NoError(t, err)
+		r.Header.Set(userIDHeader, "any")
+
+		resp, err := httpClient.Do(r)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("get web without user id header", func(t *testing.T) {
 		roundtripper, err := c.GetRoundTripper(ctx)
 		require.NoError(t, err)
 
@@ -223,128 +341,128 @@ func Test_ExecuteCommand(t *testing.T) {
 	require.Empty(t, errs)
 }
 
-func Test_GetViewConfigs(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-
-	config := baseConfig
-
-	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
-		Inputs: []bootstrap.InputConfig{
-			{
-				Slug: "B",
-			},
-		},
-		Commands: []bootstrap.CommandConfig{
-			{
-				Slug:    "A",
-				Command: "A",
-			},
-			{
-				Slug:    "B",
-				Command: "B",
-				Inputs: []bootstrap.CommandInputConfig{
-					{
-						InputSlug: "B",
-					},
-				},
-			},
-		},
-		Sequences: []bootstrap.SequenceConfig{
-			{
-				Slug: "A",
-				Steps: []bootstrap.StepConfig{
-					{
-						Name:        "A",
-						CommandSlug: "A",
-					},
-					{
-						Name:        "B",
-						CommandSlug: "B",
-					},
-				},
-			},
-		},
-		Views: []bootstrap.ViewConfig{
-			{
-				Name:        "A",
-				CommandSlug: "A",
-			},
-			{
-				Name:         "B",
-				SequenceSlug: "A",
-			},
-		},
-	}
-
-	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
-		Config: config,
-	})
-
-	go func() {
-		srv, err := c.GetHTTPServer(ctx)
-		require.NoError(t, err)
-
-		l, err := c.GetHTTPListener(ctx)
-		require.NoError(t, err)
-
-		err = srv.Serve(l)
-		//require.NoError(t, err)
-	}()
-
-	client, err := c.GetClient(ctx)
-	require.NoError(t, err)
-
-	t.Run("valid request", func(t *testing.T) {
-		rsp, err := client.GetViewConfigs(ctx, business.GetViewConfigsRequest{})
-		require.NoError(t, err)
-
-		expected := []domain.ViewConfig{
-			{
-				Name: "A",
-				Command: domain.CommandConfig{
-					Slug:    "A",
-					Command: "A",
-				},
-			},
-			{
-				Name: "B",
-				Sequence: domain.SequenceConfig{
-					Slug: "A",
-					Steps: []domain.StepConfig{
-						{
-							Name: "A",
-							Command: domain.CommandConfig{
-								Slug:    "A",
-								Command: "A",
-							},
-						},
-						{
-							Name: "B",
-							Command: domain.CommandConfig{
-								Slug:    "B",
-								Command: "B",
-								Inputs: []domain.CommandInputConfig{
-									{
-										Input: domain.InputConfig{
-											Slug: "B",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-
-		assert.Equal(t, expected, rsp.ViewConfigs)
-	})
-
-	errs := c.Close(ctx)
-	require.Empty(t, errs)
-}
+//func Test_GetViewConfigs(t *testing.T) {
+//	t.Parallel()
+//
+//	ctx := context.Background()
+//
+//	config := baseConfig
+//
+//	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+//		Inputs: []bootstrap.InputConfig{
+//			{
+//				Slug: "B",
+//			},
+//		},
+//		Commands: []bootstrap.CommandConfig{
+//			{
+//				Slug:    "A",
+//				Command: "A",
+//			},
+//			{
+//				Slug:    "B",
+//				Command: "B",
+//				Inputs: []bootstrap.CommandInputConfig{
+//					{
+//						InputSlug: "B",
+//					},
+//				},
+//			},
+//		},
+//		Sequences: []bootstrap.SequenceConfig{
+//			{
+//				Slug: "A",
+//				Steps: []bootstrap.StepConfig{
+//					{
+//						Name:        "A",
+//						CommandSlug: "A",
+//					},
+//					{
+//						Name:        "B",
+//						CommandSlug: "B",
+//					},
+//				},
+//			},
+//		},
+//		Views: []bootstrap.ViewConfig{
+//			{
+//				Name:        "A",
+//				CommandSlug: "A",
+//			},
+//			{
+//				Name:         "B",
+//				SequenceSlug: "A",
+//			},
+//		},
+//	}
+//
+//	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+//		Config: config,
+//	})
+//
+//	go func() {
+//		srv, err := c.GetHTTPServer(ctx)
+//		require.NoError(t, err)
+//
+//		l, err := c.GetHTTPListener(ctx)
+//		require.NoError(t, err)
+//
+//		err = srv.Serve(l)
+//		//require.NoError(t, err)
+//	}()
+//
+//	client, err := c.GetClient(ctx)
+//	require.NoError(t, err)
+//
+//	t.Run("valid request", func(t *testing.T) {
+//		rsp, err := client.GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+//		require.NoError(t, err)
+//
+//		expected := []domain.ViewConfig{
+//			{
+//				Name: "A",
+//				Command: domain.CommandConfig{
+//					Slug:    "A",
+//					Command: "A",
+//				},
+//			},
+//			{
+//				Name: "B",
+//				Sequence: domain.SequenceConfig{
+//					Slug: "A",
+//					Steps: []domain.StepConfig{
+//						{
+//							Name: "A",
+//							Command: domain.CommandConfig{
+//								Slug:    "A",
+//								Command: "A",
+//							},
+//						},
+//						{
+//							Name: "B",
+//							Command: domain.CommandConfig{
+//								Slug:    "B",
+//								Command: "B",
+//								Inputs: []domain.CommandInputConfig{
+//									{
+//										Input: domain.InputConfig{
+//											Slug: "B",
+//										},
+//									},
+//								},
+//							},
+//						},
+//					},
+//				},
+//			},
+//		}
+//
+//		assert.Equal(t, expected, rsp.ViewConfigs)
+//	})
+//
+//	errs := c.Close(ctx)
+//	require.Empty(t, errs)
+//}
 
 func Test_GetCategoryConfigs(t *testing.T) {
 	t.Parallel()
@@ -404,6 +522,335 @@ func Test_GetCategoryConfigs(t *testing.T) {
 		}
 
 		assert.Equal(t, expected, rsp.CategoryConfigs)
+	})
+
+	errs := c.Close(ctx)
+	require.Empty(t, errs)
+}
+
+func Test_Permissions(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	config := baseConfig
+	const userIDHeader = "user-id"
+	config.Communication.UserIDHeader = userIDHeader
+
+	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
+		Users: []bootstrap.UserConfig{
+			{
+				ID: "a",
+				Groups: []bootstrap.UserGroupConfig{
+					{
+						GroupSlug: "a",
+					},
+				},
+			},
+			{
+				ID: "b",
+				Groups: []bootstrap.UserGroupConfig{
+					{
+						GroupSlug: "b",
+					},
+				},
+			},
+			{
+				ID: "all",
+				Groups: []bootstrap.UserGroupConfig{
+					{
+						GroupSlug: "all",
+					},
+				},
+			},
+		},
+		Groups: []bootstrap.GroupConfig{
+			{
+				Slug: "a",
+				Roles: []bootstrap.GroupRoleConfig{
+					{
+						RoleSlug: "see-a-category",
+					},
+				},
+			},
+			{
+				Slug: "b",
+				Roles: []bootstrap.GroupRoleConfig{
+					{
+						RoleSlug: "see-b-view",
+					},
+				},
+			},
+			{
+				Slug: "all",
+				Roles: []bootstrap.GroupRoleConfig{
+					{
+						RoleSlug: "see-a-category",
+					},
+					{
+						RoleSlug: "see-b-category",
+					},
+				},
+			},
+		},
+		Roles: []bootstrap.RoleConfig{
+			{
+				Slug: "see-a-category",
+				Categories: []bootstrap.RoleCategoryConfig{
+					{
+						CategorySlug: "a",
+					},
+				},
+			},
+			{
+				Slug: "see-b-view",
+				Views: []bootstrap.RoleViewConfig{
+					{
+						ViewSlug: "b",
+					},
+				},
+			},
+			{
+				Slug: "see-b-category",
+				Categories: []bootstrap.RoleCategoryConfig{
+					{
+						CategorySlug: "b",
+					},
+				},
+			},
+		},
+		Categories: []bootstrap.CategoryConfig{
+			{
+				Slug:  "a",
+				Name:  "a",
+				Color: "a",
+			},
+			{
+				Slug:  "b",
+				Name:  "b",
+				Color: "b",
+			},
+		},
+		Views: []bootstrap.ViewConfig{
+			{
+				Slug:         "a",
+				Name:         "a",
+				CommandSlug:  "a",
+				CategorySlug: "a",
+			},
+			{
+				Slug:         "b",
+				Name:         "b",
+				CommandSlug:  "b",
+				CategorySlug: "b",
+			},
+		},
+		Commands: []bootstrap.CommandConfig{
+			{
+				Slug:    "a",
+				Command: "a",
+			},
+			{
+				Slug:    "b",
+				Command: "b",
+			},
+		},
+	}
+
+	c := bootstrap.NewContainer(bootstrap.ContainerOpts{
+		Config: config,
+	})
+
+	go func() {
+		srv, err := c.GetHTTPServer(ctx)
+		require.NoError(t, err)
+
+		l, err := c.GetHTTPListener(ctx)
+		require.NoError(t, err)
+
+		err = srv.Serve(l)
+		//require.NoError(t, err)
+	}()
+
+	client, err := c.GetClient(ctx)
+	require.NoError(t, err)
+
+	t.Run("get categories", func(t *testing.T) {
+		t.Run("with user a", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "a").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.CategoryConfig{
+				{
+					Slug:  "a",
+					Name:  "a",
+					Color: "a",
+				},
+			}
+
+			assert.Equal(t, len(expected), len(rsp.CategoryConfigs))
+		})
+
+		t.Run("with user b", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "b").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.CategoryConfig{}
+
+			assert.Equal(t, expected, rsp.CategoryConfigs)
+		})
+
+		t.Run("with user all", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "all").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.CategoryConfig{
+				{
+					Slug:  "a",
+					Name:  "a",
+					Color: "a",
+				},
+				{
+					Slug:  "b",
+					Name:  "b",
+					Color: "b",
+				},
+			}
+
+			assert.Equal(t, len(expected), len(rsp.CategoryConfigs))
+		})
+	})
+
+	t.Run("get views", func(t *testing.T) {
+		t.Run("with user a", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "a").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.ViewConfig{
+				{
+					Slug: "a",
+					Name: "a",
+					Command: domain.CommandConfig{
+						Slug:    "a",
+						Command: "a",
+					},
+					Category: domain.CategoryConfig{
+						Slug:  "a",
+						Name:  "a",
+						Color: "a",
+					},
+				},
+			}
+
+			assert.Equal(t, expected, rsp.ViewConfigs)
+		})
+
+		t.Run("with user b", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "b").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.ViewConfig{
+				{
+					Slug: "b",
+					Name: "b",
+					Command: domain.CommandConfig{
+						Slug:    "b",
+						Command: "b",
+					},
+					Category: domain.CategoryConfig{
+						Slug:  "b",
+						Name:  "b",
+						Color: "b",
+					},
+				},
+			}
+
+			assert.Equal(t, expected, rsp.ViewConfigs)
+		})
+
+		t.Run("with user all", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "all").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.ViewConfig{
+				{
+					Slug: "a",
+					Name: "a",
+					Command: domain.CommandConfig{
+						Slug:    "a",
+						Command: "a",
+					},
+					Category: domain.CategoryConfig{
+						Slug:  "a",
+						Name:  "a",
+						Color: "a",
+					},
+				},
+				{
+					Slug: "b",
+					Name: "b",
+					Command: domain.CommandConfig{
+						Slug:    "b",
+						Command: "b",
+					},
+					Category: domain.CategoryConfig{
+						Slug:  "b",
+						Name:  "b",
+						Color: "b",
+					},
+				},
+			}
+
+			assert.Equal(t, expected, rsp.ViewConfigs)
+		})
+	})
+
+	t.Run("execute", func(t *testing.T) {
+		t.Run("command a", func(t *testing.T) {
+			t.Run("with user a", func(t *testing.T) {
+				_, err := client.WithUserID(userIDHeader, "a").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "a",
+				})
+				require.NoError(t, err)
+			})
+
+			t.Run("with user b", func(t *testing.T) {
+				_, err := client.WithUserID(userIDHeader, "b").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "a",
+				})
+				require.Error(t, err)
+			})
+
+			t.Run("with user all", func(t *testing.T) {
+				_, err := client.WithUserID(userIDHeader, "all").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "a",
+				})
+				require.NoError(t, err)
+			})
+		})
+
+		t.Run("command b", func(t *testing.T) {
+			t.Run("with user a", func(t *testing.T) {
+				_, err := client.WithUserID(userIDHeader, "a").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "b",
+				})
+				require.Error(t, err)
+			})
+
+			t.Run("with user b", func(t *testing.T) {
+				_, err := client.WithUserID(userIDHeader, "b").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "b",
+				})
+				require.NoError(t, err)
+			})
+
+			t.Run("with user all", func(t *testing.T) {
+				_, err := client.WithUserID(userIDHeader, "all").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "b",
+				})
+				require.NoError(t, err)
+			})
+		})
 	})
 
 	errs := c.Close(ctx)

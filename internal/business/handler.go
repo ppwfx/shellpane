@@ -35,7 +35,18 @@ type GetViewConfigsResponse struct {
 }
 
 func (h Handler) GetViewConfigs(ctx context.Context, req GetViewConfigsRequest) (GetViewConfigsResponse, error) {
-	return GetViewConfigsResponse{ViewConfigs: h.opts.Repository.GetViewConfigs()}, nil
+	userID := UserID(ctx)
+	var views []domain.ViewConfig
+	switch {
+	case userID == "":
+		views = h.opts.Repository.GetViewConfigs()
+	case userID != "":
+		allowedViews := h.opts.Repository.GetUserAllowedViews()[userID]
+
+		views = h.opts.Repository.GetViewConfigsIn(allowedViews)
+	}
+
+	return GetViewConfigsResponse{ViewConfigs: views}, nil
 }
 
 type GetCategoryConfigsRequest struct {
@@ -47,5 +58,16 @@ type GetCategoryConfigsResponse struct {
 }
 
 func (h Handler) GetCategoryConfigs(ctx context.Context, req GetCategoryConfigsRequest) (GetCategoryConfigsResponse, error) {
-	return GetCategoryConfigsResponse{CategoryConfigs: h.opts.Repository.GetCategoryConfigs()}, nil
+	userID := UserID(ctx)
+	var categories []domain.CategoryConfig
+	switch {
+	case userID == "":
+		categories = h.opts.Repository.GetCategoryConfigs()
+	case userID != "":
+		allowedCategories := h.opts.Repository.GetUserAllowedCategories()[userID]
+
+		categories = h.opts.Repository.GetCategoryConfigsIn(allowedCategories)
+	}
+
+	return GetCategoryConfigsResponse{CategoryConfigs: categories}, nil
 }

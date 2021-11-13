@@ -25,13 +25,22 @@ type ClientOpts struct {
 }
 
 type Client struct {
-	opts ClientOpts
+	opts         ClientOpts
+	userIDHeader string
+	userID       string
 }
 
 func NewClient(opts ClientOpts) Client {
 	return Client{
 		opts: opts,
 	}
+}
+
+func (c Client) WithUserID(header string, userID string) Client {
+	c.userIDHeader = header
+	c.userID = userID
+
+	return c
 }
 
 func (c Client) ExecuteCommand(ctx context.Context, req business.ExecuteCommandRequest) (rsp business.ExecuteCommandResponse, err error) {
@@ -97,6 +106,10 @@ func (c Client) doJsonRequest(ctx context.Context, u string, method string, req 
 	r, err := http.NewRequestWithContext(ctx, method, u, &b)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create request for url=%v", u)
+	}
+
+	if c.userIDHeader != "" {
+		r.Header.Set(c.userIDHeader, c.userID)
 	}
 
 	resp, err := c.opts.HttpClient.Do(r)

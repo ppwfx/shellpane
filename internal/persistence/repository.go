@@ -5,9 +5,13 @@ import (
 )
 
 type RepositoryOpts struct {
-	ViewConfigs     []domain.ViewConfig
-	CommandConfigs  map[string]domain.CommandConfig
-	CategoryConfigs []domain.CategoryConfig
+	ViewConfigs           []domain.ViewConfig
+	UserConfigs           map[string]domain.UserConfig
+	UserAllowedViews      map[string]map[string]struct{}
+	UserAllowedCategories map[string]map[string]struct{}
+	UserAllowedCommands   map[string]map[string]struct{}
+	CommandConfigs        map[string]domain.CommandConfig
+	CategoryConfigs       []domain.CategoryConfig
 }
 
 type Repository struct {
@@ -20,12 +24,52 @@ func NewRepository(opts RepositoryOpts) Repository {
 	}
 }
 
+func (r Repository) GetUserAllowedViews() map[string]map[string]struct{} {
+	return r.opts.UserAllowedViews
+}
+
+func (r Repository) GetUserAllowedCategories() map[string]map[string]struct{} {
+	return r.opts.UserAllowedCategories
+}
+
+func (r Repository) GetUserAllowedCommands() map[string]map[string]struct{} {
+	return r.opts.UserAllowedCommands
+}
+
 func (r Repository) GetViewConfigs() []domain.ViewConfig {
 	return r.opts.ViewConfigs
 }
 
+func (r Repository) GetViewConfigsIn(slugs map[string]struct{}) []domain.ViewConfig {
+	var views []domain.ViewConfig
+	for i := range r.GetViewConfigs() {
+		_, ok := slugs[r.opts.ViewConfigs[i].Slug]
+		if !ok {
+			continue
+		}
+
+		views = append(views, r.opts.ViewConfigs[i])
+	}
+
+	return views
+}
+
 func (r Repository) GetCategoryConfigs() []domain.CategoryConfig {
 	return r.opts.CategoryConfigs
+}
+
+func (r Repository) GetCategoryConfigsIn(slugs map[string]struct{}) []domain.CategoryConfig {
+	categories := []domain.CategoryConfig{}
+	for i := range r.GetCategoryConfigs() {
+		_, ok := slugs[r.opts.CategoryConfigs[i].Slug]
+		if !ok {
+			continue
+		}
+
+		categories = append(categories, r.opts.CategoryConfigs[i])
+	}
+
+	return categories
 }
 
 func (r Repository) GetViewConfig(name string) (domain.ViewConfig, bool) {
