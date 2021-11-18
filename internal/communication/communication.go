@@ -7,4 +7,5 @@ type Config struct {
 	DefaultUserID string
 	Router        RouterConfig
 	Client        ClientConfig
+	CorsOrigin string
 }

@@ -35,7 +35,7 @@ func WithUserIDMiddleware(handler http.Handler, userIDHeader string, defaultUser
 	}
 }
 
-func WithBasicAuthMiddleware(handler http.Handler, config BasicAuthConfig) http.HandlerFunc {
+func WithBasicAuthMiddleware(next http.Handler, config BasicAuthConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u, p, ok := r.BasicAuth()
 		if !ok || len(strings.TrimSpace(u)) < 1 || len(strings.TrimSpace(p)) < 1 {
@@ -50,13 +50,13 @@ func WithBasicAuthMiddleware(handler http.Handler, config BasicAuthConfig) http.
 			return
 		}
 
-		handler.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	}
 }
 
-func CorsMiddleware(next http.Handler) http.Handler {
+func CorsMiddleware(next http.Handler, corsOrigin string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", corsOrigin)
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization,X-CSRF-Token")
 		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
