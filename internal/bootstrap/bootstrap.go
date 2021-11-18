@@ -143,7 +143,9 @@ func (c Container) GetRouter(ctx context.Context) (http.Handler, error) {
 		router = communication.WithUserIDMiddleware(router, c.opts.Config.Communication.UserIDHeader, c.opts.Config.Communication.DefaultUserID)
 	}
 
-	router = communication.CorsMiddleware(router)
+	if c.opts.Config.Communication.CorsOrigin != "" {
+		router = communication.CorsMiddleware(router, c.opts.Config.Communication.CorsOrigin)
+	}
 
 	router = logutil.LogRequestMiddleware(router)
 	router = logutil.WithLoggerValueMiddleware(logger)(router)

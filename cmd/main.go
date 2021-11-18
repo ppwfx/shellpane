@@ -23,16 +23,17 @@ func getConfig(args []string) (bootstrap.ContainerConfig, error) {
 		},
 	}
 
-	fs.StringVar(&conf.Logger.Backend, "logger-backend", "", "use a logger that's optimized for a specific logging backend - possible values (stackdriver)")
-	fs.StringVar(&conf.Logger.MinLevel, "logger-level", "info", "possible values (debug|info|warn|error|panic|fatal)")
-	fs.BoolVar(&conf.Logger.UseColor, "logger-use-color", false, "possible values (true|false)")
-	fs.BoolVar(&conf.Logger.ReportCaller, "logger-report-caller", false, "possible values (true|false)")
-	fs.BoolVar(&conf.Logger.UseJSON, "logger-use-json", false, "possible values (true|false)")
+	fs.StringVar(&conf.Logger.Backend, "logger-backend", "", "use a logger that's optimized for a specific logging backend (stackdriver)")
+	fs.StringVar(&conf.Logger.MinLevel, "logger-min-level", "info", "(debug|info|warn|error|panic|fatal)")
+	fs.BoolVar(&conf.Logger.UseColor, "logger-use-color", false, "(true|false)")
+	fs.BoolVar(&conf.Logger.ReportCaller, "logger-report-caller", false, "(true|false)")
+	fs.BoolVar(&conf.Logger.UseJSON, "logger-use-json", false, "(true|false)")
 	fs.StringVar(&conf.Communication.HttpAddr, "http-addr", "0.0.0.0:8000", "http address to listen on")
 	fs.StringVar(&conf.Communication.Router.BasicAuth.Username, "basic-auth-username", "", "optional: specify a basic auth username")
 	fs.StringVar(&conf.Communication.Router.BasicAuth.Password, "basic-auth-password", "", "optional: specify a basic auth password")
 	fs.StringVar(&conf.Communication.UserIDHeader, "user-id-header", "", "optional: name of user id header; implicitly activates permissions")
 	fs.StringVar(&conf.Communication.DefaultUserID, "default-user-id", "", "optional: specify a default user id, if the user id header is not set or the user id header is empty")
+	fs.StringVar(&conf.Communication.CorsOrigin, "cors-origin", "", "optional: specify a cors origin")
 
 	fs.StringVar(&conf.ShellpaneYAMLPath, "shellpane-yaml-path", "", "path to specs yaml")
 	var specsYAML string
