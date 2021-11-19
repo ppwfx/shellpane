@@ -201,47 +201,58 @@ func Test_ValidateShellpaneConfig(t *testing.T) {
 		config := ShellpaneConfig{
 			Inputs: []InputConfig{
 				{
-					Slug: "A",
+					Slug: "input-a",
 				},
 			},
 			Commands: []CommandConfig{
 				{
-					Slug:    "A",
+					Slug:    "command-a",
 					Command: "A",
 					Inputs: []CommandInputConfig{
 						{
-							InputSlug: "A",
+							InputSlug: "input-a",
 						},
 					},
 				},
 				{
-					Slug:    "B",
+					Slug:    "command-b",
 					Command: "B",
+				},
+			},
+			Categories: []CategoryConfig{
+				{
+					Slug:  "category-a",
+					Name:  "A",
+					Color: "green",
 				},
 			},
 			Sequences: []SequenceConfig{
 				{
-					Slug: "A",
+					Slug: "sequence-a",
 					Steps: []StepConfig{
 						{
 							Name:        "A",
-							CommandSlug: "A",
+							CommandSlug: "command-a",
 						},
 						{
 							Name:        "B",
-							CommandSlug: "B",
+							CommandSlug: "command-b",
 						},
 					},
 				},
 			},
 			Views: []ViewConfig{
 				{
-					Name:        "A",
-					CommandSlug: "A",
+					Slug:         "view-a",
+					Name:         "A",
+					CategorySlug: "category-a",
+					CommandSlug:  "command-a",
 				},
 				{
+					Slug:         "view-b",
 					Name:         "B",
-					SequenceSlug: "A",
+					CategorySlug: "category-a",
+					SequenceSlug: "sequence-a",
 				},
 			},
 		}
@@ -268,14 +279,14 @@ func Test_ValidateShellpaneConfig(t *testing.T) {
 					},
 				},
 				{
-					Slug:    "B",
-					Command: "B",
+					Slug:    "A",
+					Command: "A",
 				},
 			},
 		}
 
 		err := ValidateShellpaneConfig(config)
-		require.NoError(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("duplicate input slugs", func(t *testing.T) {
@@ -291,6 +302,6 @@ func Test_ValidateShellpaneConfig(t *testing.T) {
 		}
 
 		err := ValidateShellpaneConfig(config)
-		require.NoError(t, err)
+		require.Error(t, err)
 	})
 }

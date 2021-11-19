@@ -212,6 +212,15 @@ func validateViews(definedCommands map[string]struct{}, definedSequences map[str
 		seenNames[views[i].Name] = struct{}{}
 	}
 
+	seenSlugs := map[string]struct{}{}
+	for i := range views {
+		_, seen := seenSlugs[views[i].Slug]
+		if seen {
+			return errors.Errorf("duplicate slug=%v", views[i].Slug)
+		}
+		seenSlugs[views[i].Slug] = struct{}{}
+	}
+
 	return nil
 }
 
