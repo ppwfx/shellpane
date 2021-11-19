@@ -540,118 +540,118 @@ func Test_Permissions(t *testing.T) {
 	config.ShellpaneConfig = &bootstrap.ShellpaneConfig{
 		Users: []bootstrap.UserConfig{
 			{
-				ID: "a",
+				ID: "user-a",
 				Groups: []bootstrap.UserGroupConfig{
 					{
-						GroupSlug: "a",
+						GroupSlug: "group-a",
 					},
 				},
 			},
 			{
-				ID: "b",
+				ID: "user-b",
 				Groups: []bootstrap.UserGroupConfig{
 					{
-						GroupSlug: "b",
+						GroupSlug: "group-b",
 					},
 				},
 			},
 			{
-				ID: "all",
+				ID: "user-all",
 				Groups: []bootstrap.UserGroupConfig{
 					{
-						GroupSlug: "all",
+						GroupSlug: "group-all",
 					},
 				},
 			},
 		},
 		Groups: []bootstrap.GroupConfig{
 			{
-				Slug: "a",
+				Slug: "group-a",
 				Roles: []bootstrap.GroupRoleConfig{
 					{
-						RoleSlug: "see-a-category",
+						RoleSlug: "role-see-a-category",
 					},
 				},
 			},
 			{
-				Slug: "b",
+				Slug: "group-b",
 				Roles: []bootstrap.GroupRoleConfig{
 					{
-						RoleSlug: "see-b-view",
+						RoleSlug: "role-see-b-view",
 					},
 				},
 			},
 			{
-				Slug: "all",
+				Slug: "group-all",
 				Roles: []bootstrap.GroupRoleConfig{
 					{
-						RoleSlug: "see-a-category",
+						RoleSlug: "role-see-a-category",
 					},
 					{
-						RoleSlug: "see-b-category",
+						RoleSlug: "role-see-b-category",
 					},
 				},
 			},
 		},
 		Roles: []bootstrap.RoleConfig{
 			{
-				Slug: "see-a-category",
+				Slug: "role-see-a-category",
 				Categories: []bootstrap.RoleCategoryConfig{
 					{
-						CategorySlug: "a",
+						CategorySlug: "category-a",
 					},
 				},
 			},
 			{
-				Slug: "see-b-view",
+				Slug: "role-see-b-view",
 				Views: []bootstrap.RoleViewConfig{
 					{
-						ViewSlug: "b",
+						ViewSlug: "view-b",
 					},
 				},
 			},
 			{
-				Slug: "see-b-category",
+				Slug: "role-see-b-category",
 				Categories: []bootstrap.RoleCategoryConfig{
 					{
-						CategorySlug: "b",
+						CategorySlug: "category-b",
 					},
 				},
 			},
 		},
 		Categories: []bootstrap.CategoryConfig{
 			{
-				Slug:  "a",
+				Slug:  "category-a",
 				Name:  "a",
 				Color: "a",
 			},
 			{
-				Slug:  "b",
+				Slug:  "category-b",
 				Name:  "b",
 				Color: "b",
 			},
 		},
 		Views: []bootstrap.ViewConfig{
 			{
-				Slug:         "a",
+				Slug:         "view-a",
 				Name:         "a",
-				CommandSlug:  "a",
-				CategorySlug: "a",
+				CommandSlug:  "command-a",
+				CategorySlug: "category-a",
 			},
 			{
-				Slug:         "b",
+				Slug:         "view-b",
 				Name:         "b",
-				CommandSlug:  "b",
-				CategorySlug: "b",
+				CommandSlug:  "command-b",
+				CategorySlug: "category-b",
 			},
 		},
 		Commands: []bootstrap.CommandConfig{
 			{
-				Slug:    "a",
+				Slug:    "command-a",
 				Command: "a",
 			},
 			{
-				Slug:    "b",
+				Slug:    "command-b",
 				Command: "b",
 			},
 		},
@@ -677,65 +677,71 @@ func Test_Permissions(t *testing.T) {
 
 	t.Run("get categories", func(t *testing.T) {
 		t.Run("with user a", func(t *testing.T) {
-			rsp, err := client.WithUserID(userIDHeader, "a").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+			rsp, err := client.WithUserID(userIDHeader, "user-a").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
 			require.NoError(t, err)
 
 			expected := []domain.CategoryConfig{
 				{
-					Slug:  "a",
+					Slug:  "category-a",
 					Name:  "a",
 					Color: "a",
 				},
 			}
 
-			assert.Equal(t, len(expected), len(rsp.CategoryConfigs))
-		})
-
-		t.Run("with user b", func(t *testing.T) {
-			rsp, err := client.WithUserID(userIDHeader, "b").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
-			require.NoError(t, err)
-
-			expected := []domain.CategoryConfig{}
-
 			assert.Equal(t, expected, rsp.CategoryConfigs)
 		})
 
-		t.Run("with user all", func(t *testing.T) {
-			rsp, err := client.WithUserID(userIDHeader, "all").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+		t.Run("with user b", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "user-b").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
 			require.NoError(t, err)
 
 			expected := []domain.CategoryConfig{
 				{
-					Slug:  "a",
-					Name:  "a",
-					Color: "a",
-				},
-				{
-					Slug:  "b",
+					Slug:  "category-b",
 					Name:  "b",
 					Color: "b",
 				},
 			}
 
-			assert.Equal(t, len(expected), len(rsp.CategoryConfigs))
+			assert.Equal(t, expected, rsp.CategoryConfigs)
+		})
+
+		t.Run("with user all", func(t *testing.T) {
+			rsp, err := client.WithUserID(userIDHeader, "user-all").GetCategoryConfigs(ctx, business.GetCategoryConfigsRequest{})
+			require.NoError(t, err)
+
+			expected := []domain.CategoryConfig{
+				{
+					Slug:  "category-a",
+					Name:  "a",
+					Color: "a",
+				},
+				{
+					Slug:  "category-b",
+					Name:  "b",
+					Color: "b",
+				},
+			}
+
+			assert.Equal(t, expected, rsp.CategoryConfigs)
 		})
 	})
 
 	t.Run("get views", func(t *testing.T) {
 		t.Run("with user a", func(t *testing.T) {
-			rsp, err := client.WithUserID(userIDHeader, "a").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+			rsp, err := client.WithUserID(userIDHeader, "user-a").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
 			require.NoError(t, err)
 
 			expected := []domain.ViewConfig{
 				{
-					Slug: "a",
+					Slug: "view-a",
 					Name: "a",
 					Command: domain.CommandConfig{
-						Slug:    "a",
+						Slug:    "command-a",
 						Command: "a",
 					},
 					Category: domain.CategoryConfig{
-						Slug:  "a",
+						Slug:  "category-a",
 						Name:  "a",
 						Color: "a",
 					},
@@ -746,19 +752,19 @@ func Test_Permissions(t *testing.T) {
 		})
 
 		t.Run("with user b", func(t *testing.T) {
-			rsp, err := client.WithUserID(userIDHeader, "b").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+			rsp, err := client.WithUserID(userIDHeader, "user-b").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
 			require.NoError(t, err)
 
 			expected := []domain.ViewConfig{
 				{
-					Slug: "b",
+					Slug: "view-b",
 					Name: "b",
 					Command: domain.CommandConfig{
-						Slug:    "b",
+						Slug:    "command-b",
 						Command: "b",
 					},
 					Category: domain.CategoryConfig{
-						Slug:  "b",
+						Slug:  "category-b",
 						Name:  "b",
 						Color: "b",
 					},
@@ -769,32 +775,32 @@ func Test_Permissions(t *testing.T) {
 		})
 
 		t.Run("with user all", func(t *testing.T) {
-			rsp, err := client.WithUserID(userIDHeader, "all").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
+			rsp, err := client.WithUserID(userIDHeader, "user-all").GetViewConfigs(ctx, business.GetViewConfigsRequest{})
 			require.NoError(t, err)
 
 			expected := []domain.ViewConfig{
 				{
-					Slug: "a",
+					Slug: "view-a",
 					Name: "a",
 					Command: domain.CommandConfig{
-						Slug:    "a",
+						Slug:    "command-a",
 						Command: "a",
 					},
 					Category: domain.CategoryConfig{
-						Slug:  "a",
+						Slug:  "category-a",
 						Name:  "a",
 						Color: "a",
 					},
 				},
 				{
-					Slug: "b",
+					Slug: "view-b",
 					Name: "b",
 					Command: domain.CommandConfig{
-						Slug:    "b",
+						Slug:    "command-b",
 						Command: "b",
 					},
 					Category: domain.CategoryConfig{
-						Slug:  "b",
+						Slug:  "category-b",
 						Name:  "b",
 						Color: "b",
 					},
@@ -808,22 +814,22 @@ func Test_Permissions(t *testing.T) {
 	t.Run("execute", func(t *testing.T) {
 		t.Run("command a", func(t *testing.T) {
 			t.Run("with user a", func(t *testing.T) {
-				_, err := client.WithUserID(userIDHeader, "a").ExecuteCommand(ctx, business.ExecuteCommandRequest{
-					Slug: "a",
+				_, err := client.WithUserID(userIDHeader, "user-a").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "command-a",
 				})
 				require.NoError(t, err)
 			})
 
 			t.Run("with user b", func(t *testing.T) {
-				_, err := client.WithUserID(userIDHeader, "b").ExecuteCommand(ctx, business.ExecuteCommandRequest{
-					Slug: "a",
+				_, err := client.WithUserID(userIDHeader, "user-b").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "command-a",
 				})
 				require.Error(t, err)
 			})
 
 			t.Run("with user all", func(t *testing.T) {
-				_, err := client.WithUserID(userIDHeader, "all").ExecuteCommand(ctx, business.ExecuteCommandRequest{
-					Slug: "a",
+				_, err := client.WithUserID(userIDHeader, "user-all").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "command-a",
 				})
 				require.NoError(t, err)
 			})
@@ -831,22 +837,22 @@ func Test_Permissions(t *testing.T) {
 
 		t.Run("command b", func(t *testing.T) {
 			t.Run("with user a", func(t *testing.T) {
-				_, err := client.WithUserID(userIDHeader, "a").ExecuteCommand(ctx, business.ExecuteCommandRequest{
-					Slug: "b",
+				_, err := client.WithUserID(userIDHeader, "user-a").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "command-b",
 				})
 				require.Error(t, err)
 			})
 
 			t.Run("with user b", func(t *testing.T) {
-				_, err := client.WithUserID(userIDHeader, "b").ExecuteCommand(ctx, business.ExecuteCommandRequest{
-					Slug: "b",
+				_, err := client.WithUserID(userIDHeader, "user-b").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "command-b",
 				})
 				require.NoError(t, err)
 			})
 
 			t.Run("with user all", func(t *testing.T) {
-				_, err := client.WithUserID(userIDHeader, "all").ExecuteCommand(ctx, business.ExecuteCommandRequest{
-					Slug: "b",
+				_, err := client.WithUserID(userIDHeader, "user-all").ExecuteCommand(ctx, business.ExecuteCommandRequest{
+					Slug: "command-b",
 				})
 				require.NoError(t, err)
 			})

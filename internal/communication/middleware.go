@@ -12,10 +12,17 @@ type BasicAuthConfig struct {
 	Password string
 }
 
-func WithUserIDMiddleware(handler http.Handler, userIDHeader string) http.HandlerFunc {
+func WithUserIDMiddleware(handler http.Handler, userIDHeader string, defaultUserID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Header.Get(userIDHeader)
-		if userID == "" {
+		headerUserID := r.Header.Get(userIDHeader)
+
+		var userID string
+		switch {
+		case headerUserID != "":
+			userID = headerUserID
+		case defaultUserID != "":
+			userID = defaultUserID
+		default:
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}

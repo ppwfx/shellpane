@@ -263,6 +263,10 @@ func generateConfigs(conf ShellpaneConfig) (
 				for _, c := range user.Groups[i].Roles[ii].Categories {
 					allowedCategories[userID][c.Slug] = struct{}{}
 				}
+
+				for _, v := range user.Groups[i].Roles[ii].Views {
+					allowedCategories[userID][v.Category.Slug] = struct{}{}
+				}
 			}
 		}
 	}
