@@ -220,6 +220,10 @@ func validateView(definedCommands map[string]struct{}, definedSequences map[stri
 		return errors.New("name is empty")
 	}
 
+	if view.Slug == "" {
+		return errors.New("slug is empty")
+	}
+
 	switch {
 	case view.CommandSlug != "" && view.SequenceSlug != "":
 		return errors.New("command and process set")
