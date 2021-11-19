@@ -13,8 +13,6 @@ roles:
     views:
       - view: with-shared-input
       - view: with-first-failing
-    categories:
-      - category: sequences
 
 categories:
   - name: sequences

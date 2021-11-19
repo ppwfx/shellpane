@@ -1,9 +1,10 @@
 package communication
 
 type Config struct {
-	HttpAddr     string
-	Listener     string
-	UserIDHeader string
-	Router       RouterConfig
-	Client       ClientConfig
+	HttpAddr      string
+	Listener      string
+	UserIDHeader  string
+	DefaultUserID string
+	Router        RouterConfig
+	Client        ClientConfig
 }

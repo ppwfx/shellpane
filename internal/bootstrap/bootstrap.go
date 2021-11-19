@@ -134,19 +134,19 @@ func (c Container) GetRouter(ctx context.Context) (http.Handler, error) {
 		return nil, errors.Wrapf(err, "failed to get logger")
 	}
 
-	router = logutil.LogRequestMiddleware(router)
-	router = logutil.WithLoggerValueMiddleware(logger)(router)
-
 	if c.opts.Config.Communication.Router.BasicAuth.Username != "" &&
 		c.opts.Config.Communication.Router.BasicAuth.Password != "" {
 		router = communication.WithBasicAuthMiddleware(router, c.opts.Config.Communication.Router.BasicAuth)
 	}
 
 	if c.opts.Config.Communication.UserIDHeader != "" {
-		router = communication.WithUserIDMiddleware(router, c.opts.Config.Communication.UserIDHeader)
+		router = communication.WithUserIDMiddleware(router, c.opts.Config.Communication.UserIDHeader, c.opts.Config.Communication.DefaultUserID)
 	}
 
 	router = communication.CorsMiddleware(router)
+
+	router = logutil.LogRequestMiddleware(router)
+	router = logutil.WithLoggerValueMiddleware(logger)(router)
 
 	c.router = router
 
@@ -294,7 +294,7 @@ func (c *Container) GetRepository(ctx context.Context) (persistence.Repository, 
 		return *c.repository, nil
 	}
 
-	userConfigs, viewConfigs, categoryConfigs, commandsConfigs, allowedCategories, allowedCommands, allowedViews, err := c.GetConfigs(ctx)
+	userConfigs, viewConfigs, categoryConfigs, commandsConfigs, allowedCategories, allowedViews, allowedCommands, err := c.GetConfigs(ctx)
 	if err != nil {
 		return persistence.Repository{}, errors.Wrapf(err, "failed to get configs")
 	}
@@ -325,7 +325,7 @@ func (c *Container) GetConfigs(ctx context.Context) (
 	error,
 ) {
 	if c.viewConfigs != nil {
-		return c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedCommands, c.allowedViews, nil
+		return c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedViews, c.allowedCommands, nil
 	}
 
 	fs, err := c.GetFS(ctx)
@@ -361,9 +361,9 @@ func (c *Container) GetConfigs(ctx context.Context) (
 		return nil, nil, nil, nil, nil, nil, nil, errors.Wrapf(err, "failed to validate shellpane config")
 	}
 
-	c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedCommands, c.allowedViews = generateConfigs(config)
+	c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedViews, c.allowedCommands = generateConfigs(config)
 
-	return c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedCommands, c.allowedViews, nil
+	return c.userConfigs, c.viewConfigs, c.categoryConfigs, c.commandsConfig, c.allowedCategories, c.allowedViews, c.allowedCommands, nil
 }
 
 func (c *Container) GetFS(ctx context.Context) (afero.Fs, error) {

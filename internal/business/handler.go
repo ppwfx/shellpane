@@ -6,6 +6,7 @@ import (
 	"github.com/ppwfx/shellpane/internal/domain"
 	"github.com/ppwfx/shellpane/internal/persistence"
 	"github.com/ppwfx/shellpane/internal/utils/errutil"
+	"github.com/ppwfx/shellpane/internal/utils/logutil"
 )
 
 type HandlerConfig struct {
@@ -35,16 +36,24 @@ type GetViewConfigsResponse struct {
 }
 
 func (h Handler) GetViewConfigs(ctx context.Context, req GetViewConfigsRequest) (GetViewConfigsResponse, error) {
+	log := logutil.MustLoggerValue(ctx)
+
 	userID := UserID(ctx)
+	log = log.With("userID", userID)
+
 	var views []domain.ViewConfig
 	switch {
 	case userID == "":
 		views = h.opts.Repository.GetViewConfigs()
 	case userID != "":
 		allowedViews := h.opts.Repository.GetUserAllowedViews()[userID]
+		log = log.With("allowedViews", allowedViews)
 
 		views = h.opts.Repository.GetViewConfigsIn(allowedViews)
 	}
+
+	log.With("views", views).
+		Debug()
 
 	return GetViewConfigsResponse{ViewConfigs: views}, nil
 }
@@ -67,6 +76,10 @@ func (h Handler) GetCategoryConfigs(ctx context.Context, req GetCategoryConfigsR
 		allowedCategories := h.opts.Repository.GetUserAllowedCategories()[userID]
 
 		categories = h.opts.Repository.GetCategoryConfigsIn(allowedCategories)
+	}
+
+	for i := range categories {
+		categories[i].Views = nil
 	}
 
 	return GetCategoryConfigsResponse{CategoryConfigs: categories}, nil

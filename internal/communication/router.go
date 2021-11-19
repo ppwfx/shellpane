@@ -2,11 +2,15 @@ package communication
 
 import (
 	"net/http"
+	"net/http/httputil"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/ppwfx/shellpane/internal/business"
 	"github.com/ppwfx/shellpane/internal/domain"
 	"github.com/ppwfx/shellpane/internal/utils/errutil"
+	"github.com/ppwfx/shellpane/internal/utils/logutil"
 )
 
 type RouterConfig struct {
@@ -24,6 +28,7 @@ const (
 	RouteGetViewConfigs      = "/getViewConfigs"
 	RouteGetCategoryConfigs  = "/getCategoryConfigs"
 	RouteStaticCategoriesCSS = "/static/categories.css"
+	RouteDebugDumpRequest    = "/debug/dumpRequest"
 )
 
 func NewRouter(opts RouterOpts) http.Handler {
@@ -70,6 +75,25 @@ func NewRouter(opts RouterOpts) http.Handler {
 
 		return opts.Handler.GetCategoryConfigs(r.Context(), req)
 	}))
+
+	mux.HandleFunc(RouteDebugDumpRequest, func(w http.ResponseWriter, r *http.Request) {
+		log := logutil.MustLoggerValue(r.Context())
+
+		b, err := httputil.DumpRequest(r, true)
+		if err != nil {
+			log.With("error", errors.Wrap(err, "failed to dump request")).Error()
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write(b)
+		if err != nil {
+			log.With("error", errors.Wrap(err, "failed to write to response writer")).Error()
+			return
+		}
+
+		return
+	})
 
 	mux.HandleFunc(RouteStaticCategoriesCSS, getCategoriesCSSHandler(opts.CategoryConfigs))
 
