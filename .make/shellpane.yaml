@@ -51,6 +51,10 @@ views:
     name: With long output
     category: sequences
     sequence: with-long-output
+  - slug: command-and-input-with-description
+    name: Command and input with description
+    category: commands
+    command: command-and-input-with-description
 
 sequences:
   - slug: with-shared-input
@@ -127,6 +131,12 @@ sequences:
         command: ...
 
 commands:
+  - slug: command-and-input-with-description
+    command: echo hi
+    inputs:
+      - input: WITH_DESCRIPTION
+    description: |-
+      Description for command.
   - slug: print-a
     command: echo $A && sleep 1
     inputs:
@@ -161,6 +171,9 @@ inputs:
   - slug: B
   - slug: C
   - slug: CONFIRM
+  - slug: WITH_DESCRIPTION
+    description: |-
+      Description for input.
 #    validate:
 #      required: true
 #      mustMatch: [azAz]

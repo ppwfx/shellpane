@@ -4,6 +4,7 @@ import './App.css';
 import * as client from './client';
 import {Col, message, Row} from 'antd';
 import SequenceView from './components/SequenceView'
+import CommandView from './components/CommandView'
 
 let c = new client.Client({
     config: {
@@ -64,9 +65,13 @@ function App() {
             {!category ? null: <div className={"App"}>
                 <Row gutter={[32, 32]}>
                     {viewConfigs.map((v: client.ViewConfig) => {
-                        if (v.Sequence) {
+                        if (v.Sequence && v.Sequence?.Slug !== "") {
                             return <Col key={v.Name} span={12}><SequenceView client={c} name={v.Name} viewConfig={v}
                                                                             sequenceConfig={v.Sequence}/></Col>
+                        }
+                        if (v.Command && v.Command?.Slug !== "") {
+                            return <Col key={v.Name} span={12}><CommandView client={c} name={v.Name} viewConfig={v}
+                                                                             commandConfig={v.Command}/></Col>
                         }
                     })}
                 </Row>

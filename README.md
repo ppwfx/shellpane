@@ -1,5 +1,13 @@
 # shellpane
 
+- TODO
+  - autorun sequeneces
+  - command description
+  - input description
+  - unstash visulization
+  - visualization demo
+  - cache
+
 - BE
     - default values
     - add view description

@@ -10,6 +10,8 @@ interface SequenceViewProps {
 }
 
 export const SequenceView = (props: SequenceViewProps) => {
+    console.log(props)
+
     const [currentStepIndex, setCurrentStepIndex] = React.useState<number>(0);
     const [lastExecutedStepIndex, setLastExecutedIndex] = React.useState<number>(0);
     const [executeCommandRsps, setExecuteCommandRsps] = React.useState<client.ExecuteCommandResponse[]>([...Array(props.sequenceConfig.Steps.length)]);

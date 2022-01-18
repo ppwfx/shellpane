@@ -86,7 +86,7 @@ a:hover {
 
 .views__view {
   /*border: 3px solid #ddd;*/
-  box-shadow: 0px 10px 30px 0px rgba(0, 0, 0, 0.07);
+  box-shadow: 0px 20px 30px 0px rgba(0, 0, 0, 0.10);
   transition: opacity 0.2s ease, box-shadow 0.2s ease;
   border-radius: 10px;
   height: 406px;
@@ -94,6 +94,7 @@ a:hover {
 }
 
 .views__view__header {
+  border-radius: 10px;
   padding: 5px;
   padding-left: 10px;
   padding-top: 8px;
@@ -102,6 +103,18 @@ a:hover {
   font-size: 13px;
   height: 30px;
   background: #ffffff;
+}
+
+.ant-popover-content {
+  border: 3px solid #ff0374;
+  font-weight: bold;
+  font-size: 12px;
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.ant-popover-inner-content {
+  padding: 8px 14px;
 }
 
 .views__view__step--disabled a, .views__view__step--disabled a:hover {
@@ -209,6 +222,7 @@ a:hover {
   margin-right: 5px;
   font-weight: bold;
   width: 80px;
+  border-radius: 5px;
 }
 
 .view__env__input:disabled {

@@ -4,9 +4,14 @@ export const FormatRaw = "raw"
 
 export interface ViewConfig {
     Name: string
+    Execute: ViewExecuteConfig
     Command?: CommandConfig
     Sequence?: SequenceConfig
     Category: CategoryConfig
+}
+
+export interface ViewExecuteConfig {
+    Auto: boolean
 }
 
 export interface CategoryConfig {
@@ -28,6 +33,7 @@ export interface StepConfig {
 export interface CommandConfig {
     Slug: string
     Command: string
+    Description: string
     Inputs: CommandInputConfig[]
 }
 
@@ -38,6 +44,7 @@ export interface CommandInputConfig {
 
 export interface InputConfig {
     Slug: string
+    Description: string
 }
 
 export interface ResponseError {

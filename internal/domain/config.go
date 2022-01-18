@@ -19,9 +19,14 @@ type RoleConfig struct {
 type ViewConfig struct {
 	Slug     string
 	Name     string
+	Execute  ViewExecuteConfig
 	Command  CommandConfig
 	Sequence SequenceConfig
 	Category CategoryConfig
+}
+
+type ViewExecuteConfig struct {
+	Auto bool
 }
 
 type CategoryConfig struct {
@@ -42,9 +47,10 @@ type StepConfig struct {
 }
 
 type CommandConfig struct {
-	Slug    string
-	Command string
-	Inputs  []CommandInputConfig
+	Slug        string
+	Command     string
+	Description string
+	Inputs      []CommandInputConfig
 }
 
 type CommandInputConfig struct {
@@ -52,5 +58,6 @@ type CommandInputConfig struct {
 }
 
 type InputConfig struct {
-	Slug string
+	Slug        string
+	Description string
 }

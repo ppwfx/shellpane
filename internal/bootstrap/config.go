@@ -1,44 +1,46 @@
 package bootstrap
 
-import "github.com/ppwfx/shellpane/internal/domain"
+import (
+	"github.com/ppwfx/shellpane/internal/domain"
+)
 
 type ShellpaneConfig struct {
-	Users      []UserConfig
-	Groups     []GroupConfig
-	Roles      []RoleConfig
-	Categories []CategoryConfig
-	Views      []ViewConfig
-	Sequences  []SequenceConfig
-	Commands   []CommandConfig
-	Inputs     []InputConfig
+	Users      []UserConfig     `yaml:"users,omitempty"`
+	Groups     []GroupConfig    `yaml:"groups,omitempty"`
+	Roles      []RoleConfig     `yaml:"roles,omitempty"`
+	Categories []CategoryConfig `yaml:"categories,omitempty"`
+	Views      []ViewConfig     `yaml:"views,omitempty"`
+	Sequences  []SequenceConfig `yaml:"sequences,omitempty"`
+	Commands   []CommandConfig  `yaml:"commands,omitempty"`
+	Inputs     []InputConfig    `yaml:"inputs,omitempty"`
 }
 
 type UserConfig struct {
-	ID     string
-	Groups []UserGroupConfig
+	ID     string            `yaml:"id,omitempty"`
+	Groups []UserGroupConfig `yaml:"groups,omitempty"`
 }
 
 type UserGroupConfig struct {
-	GroupSlug string `yaml:"group"`
+	GroupSlug string `yaml:"group,omitempty"`
 }
 
 type GroupConfig struct {
-	Slug  string
-	Roles []GroupRoleConfig
+	Slug  string            `yaml:"slug,omitempty"`
+	Roles []GroupRoleConfig `yaml:"roles,omitempty"`
 }
 
 type GroupRoleConfig struct {
-	RoleSlug string `yaml:"role"`
+	RoleSlug string `yaml:"role,omitempty"`
 }
 
 type RoleConfig struct {
-	Slug       string
-	Views      []RoleViewConfig
-	Categories []RoleCategoryConfig
+	Slug       string               `yaml:"slug,omitempty"`
+	Views      []RoleViewConfig     `yaml:"views,omitempty"`
+	Categories []RoleCategoryConfig `yaml:"categories,omitempty"`
 }
 
 type RoleViewConfig struct {
-	ViewSlug string `yaml:"view"`
+	ViewSlug string `yaml:"view,omitempty"`
 }
 
 type RoleCategoryConfig struct {
@@ -46,41 +48,48 @@ type RoleCategoryConfig struct {
 }
 
 type CategoryConfig struct {
-	Slug  string
-	Name  string
-	Color string
+	Slug  string `yaml:"slug,omitempty"`
+	Name  string `yaml:"name,omitempty"`
+	Color string `yaml:"color,omitempty"`
 }
 
 type ViewConfig struct {
-	Slug         string
-	Name         string
-	CommandSlug  string `yaml:"command"`
-	SequenceSlug string `yaml:"sequence"`
-	CategorySlug string `yaml:"category"`
+	Slug         string            `yaml:"slug,omitempty"`
+	Name         string            `yaml:"name,omitempty"`
+	CommandSlug  string            `yaml:"command,omitempty"`
+	SequenceSlug string            `yaml:"sequence,omitempty"`
+	CategorySlug string            `yaml:"category,omitempty"`
+	Execute      ViewExecuteConfig `yaml:"execute,omitempty"`
+}
+
+type ViewExecuteConfig struct {
+	Auto bool `yaml:"auto,omitempty"`
 }
 
 type SequenceConfig struct {
-	Slug  string
-	Steps []StepConfig
+	Slug  string       `yaml:"slug,omitempty"`
+	Steps []StepConfig `yaml:"steps,omitempty"`
 }
 
 type StepConfig struct {
-	Name        string
-	CommandSlug string `yaml:"command"`
+	Name        string `yaml:"name,omitempty"`
+	CommandSlug string `yaml:"command,omitempty"`
 }
 
 type CommandConfig struct {
-	Slug    string
-	Command string
-	Inputs  []CommandInputConfig
+	Slug        string               `yaml:"slug,omitempty"`
+	Command     string               `yaml:"command,omitempty"`
+	Description string               `yaml:"description,omitempty"`
+	Inputs      []CommandInputConfig `yaml:"inputs,omitempty"`
 }
 
 type CommandInputConfig struct {
-	InputSlug string `yaml:"input"`
+	InputSlug string `yaml:"input,omitempty"`
 }
 
 type InputConfig struct {
-	Slug string
+	Slug        string `yaml:"slug,omitempty"`
+	Description string `yaml:"description,omitempty"`
 }
 
 func generateConfigs(conf ShellpaneConfig) (
@@ -95,7 +104,8 @@ func generateConfigs(conf ShellpaneConfig) (
 	inputsM := map[string]domain.InputConfig{}
 	for _, i := range conf.Inputs {
 		inputsM[i.Slug] = domain.InputConfig{
-			Slug: i.Slug,
+			Slug:        i.Slug,
+			Description: i.Description,
 		}
 	}
 
@@ -109,9 +119,10 @@ func generateConfigs(conf ShellpaneConfig) (
 		}
 
 		commandsM[c.Slug] = domain.CommandConfig{
-			Slug:    c.Slug,
-			Command: c.Command,
-			Inputs:  commandInputs,
+			Slug:        c.Slug,
+			Command:     c.Command,
+			Description: c.Description,
+			Inputs:      commandInputs,
 		}
 	}
 
@@ -146,8 +157,11 @@ func generateConfigs(conf ShellpaneConfig) (
 	viewsM := map[string]domain.ViewConfig{}
 	for _, v := range conf.Views {
 		view := domain.ViewConfig{
-			Slug:     v.Slug,
-			Name:     v.Name,
+			Slug: v.Slug,
+			Name: v.Name,
+			Execute: domain.ViewExecuteConfig{
+				Auto: v.Execute.Auto,
+			},
 			Command:  commandsM[v.CommandSlug],
 			Sequence: processesM[v.SequenceSlug],
 			Category: categoriesM[v.CategorySlug],
