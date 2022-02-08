@@ -1,6 +1,8 @@
 import React, {useEffect, useRef} from 'react';
 import * as client from '../client';
 import {message} from 'antd';
+import ReactECharts from 'echarts-for-react';
+import Chart from "react-apexcharts";
 
 interface SequenceViewProps {
     client: client.Client
@@ -10,8 +12,6 @@ interface SequenceViewProps {
 }
 
 export const SequenceView = (props: SequenceViewProps) => {
-    console.log(props)
-
     const [currentStepIndex, setCurrentStepIndex] = React.useState<number>(0);
     const [lastExecutedStepIndex, setLastExecutedIndex] = React.useState<number>(0);
     const [executeCommandRsps, setExecuteCommandRsps] = React.useState<client.ExecuteCommandResponse[]>([...Array(props.sequenceConfig.Steps.length)]);
@@ -216,6 +216,33 @@ export const SequenceView = (props: SequenceViewProps) => {
                             outputClassName = outputClassName + " flash-border--" + props.viewConfig.Category.Slug + updateCount % 2
                         }
 
+                        let output = null;
+
+                        switch (step.Command.Display) {
+                            case "echarts-json":
+                                if (!executeCommandRsps[stepIndex]?.Output) {
+                                    break
+                                }
+
+                                let option = JSON.parse(executeCommandRsps[stepIndex]?.Output?.Stdout)
+
+                                output= <ReactECharts option={option}/>
+
+                                break
+                            case "apexcharts-json":
+                                if (!executeCommandRsps[stepIndex]?.Output) {
+                                    break
+                                }
+
+                                let options = JSON.parse(executeCommandRsps[stepIndex]?.Output?.Stdout)
+
+                                output= <Chart options={options} series={options.series} height={options.chart?.height} type={options.chart?.type} width={options.chart?.width}/>
+
+                                break
+                            default:
+                                output= executeCommandRsps[stepIndex]?.Output?.Stdout ? executeCommandRsps[stepIndex]?.Output?.Stdout : executeCommandRsps[stepIndex]?.Output?.Stderr
+                        }
+
                         return (
                             // @ts-ignore
                             <div className={className} key={props.name + stepIndex} ref={addToStepHeaderRefs}>
@@ -243,7 +270,7 @@ export const SequenceView = (props: SequenceViewProps) => {
                                                  refresh={refresh}/> : null}
                                 </div>
                                 <div className={outputClassName}>
-                                    {executeCommandRsps[stepIndex]?.Output?.Stdout ? executeCommandRsps[stepIndex]?.Output?.Stdout : executeCommandRsps[stepIndex]?.Output?.Stderr}
+                                    {output}
                                 </div>
                             </div>
                         )

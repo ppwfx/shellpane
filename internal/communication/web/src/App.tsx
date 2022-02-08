@@ -22,7 +22,6 @@ function App() {
             const rsp = await c.GetViewConfigs({})
 
             setViewConfigsRsp(rsp);
-            console.log(rsp)
         })().catch((reason: any) => {
             message.error('failed to get view configs: ' + reason.message, 5);
             setViewConfigsRsp(undefined);
@@ -33,7 +32,6 @@ function App() {
 
             setCategoryConfigsRsp(rsp);
             setCategory(rsp && rsp.CategoryConfigs && rsp.CategoryConfigs[0] ? rsp.CategoryConfigs[0]: undefined)
-            console.log(rsp)
         })().catch((reason: any) => {
             message.error('failed to get category configs: ' + reason.message, 5);
             setCategoryConfigsRsp(undefined);

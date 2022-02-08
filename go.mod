@@ -3,6 +3,7 @@ module github.com/ppwfx/shellpane
 go 1.16
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/namsral/flag v1.7.4-pre
 	github.com/pkg/errors v0.9.1

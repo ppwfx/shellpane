@@ -51,6 +51,7 @@ type CommandConfig struct {
 	Command     string
 	Description string
 	Inputs      []CommandInputConfig
+	Display     string
 }
 
 type CommandInputConfig struct {

@@ -33,6 +33,7 @@ export interface StepConfig {
 export interface CommandConfig {
     Slug: string
     Command: string
+    Display: string
     Description: string
     Inputs: CommandInputConfig[]
 }

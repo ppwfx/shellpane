@@ -81,6 +81,7 @@ type CommandConfig struct {
 	Command     string               `yaml:"command,omitempty"`
 	Description string               `yaml:"description,omitempty"`
 	Inputs      []CommandInputConfig `yaml:"inputs,omitempty"`
+	Display     string               `yaml:"display,omitempty"`
 }
 
 type CommandInputConfig struct {
@@ -123,6 +124,7 @@ func generateConfigs(conf ShellpaneConfig) (
 			Command:     c.Command,
 			Description: c.Description,
 			Inputs:      commandInputs,
+			Display:     c.Display,
 		}
 	}
 

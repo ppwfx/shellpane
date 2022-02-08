@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -312,6 +313,8 @@ func (c *Container) GetRepository(ctx context.Context) (persistence.Repository, 
 	})
 
 	c.repository = &repository
+
+	spew.Dump(viewConfigs[0])
 
 	return *c.repository, nil
 }

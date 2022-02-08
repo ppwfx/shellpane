@@ -62,6 +62,32 @@ func LogRequestMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+type logHTTPRequest struct {
+	Method             string
+	URL                string
+	UserAgent          string
+	Referrer           string
+	RemoteIP           string
+	RequestSize        int64
+	ResponseSize       int64
+	ResponseStatusCode int
+	Latency            string
+}
+
+func (r *logHTTPRequest) MarshalLogObject(e zapcore.ObjectEncoder) error {
+	e.AddString("method", r.Method)
+	e.AddString("url", r.URL)
+	e.AddString("userAgent", r.UserAgent)
+	e.AddString("referrer", r.Referrer)
+	e.AddInt("responseStatusCode", r.ResponseStatusCode)
+	e.AddString("remoteIp", r.RemoteIP)
+	e.AddInt64("requestSize", r.RequestSize)
+	e.AddInt64("responseSize", r.ResponseSize)
+	e.AddString("latency", r.Latency)
+
+	return nil
+}
+
 type interceptingWriter struct {
 	count int64
 	code  int
@@ -117,30 +143,4 @@ func WithHTTPResponse(l *zap.SugaredLogger, r *http.Request, resp *http.Response
 	entry = beforeLog(entry)
 
 	return l.With("context.httpResponse", entry)
-}
-
-type logHTTPRequest struct {
-	Method             string
-	URL                string
-	UserAgent          string
-	Referrer           string
-	RemoteIP           string
-	RequestSize        int64
-	ResponseSize       int64
-	ResponseStatusCode int
-	Latency            string
-}
-
-func (r *logHTTPRequest) MarshalLogObject(e zapcore.ObjectEncoder) error {
-	e.AddString("method", r.Method)
-	e.AddString("url", r.URL)
-	e.AddString("userAgent", r.UserAgent)
-	e.AddString("referrer", r.Referrer)
-	e.AddInt("responseStatusCode", r.ResponseStatusCode)
-	e.AddString("remoteIp", r.RemoteIP)
-	e.AddInt64("requestSize", r.RequestSize)
-	e.AddInt64("responseSize", r.ResponseSize)
-	e.AddString("latency", r.Latency)
-
-	return nil
 }

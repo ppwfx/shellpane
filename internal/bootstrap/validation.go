@@ -384,6 +384,13 @@ func validateCommand(definedInputs map[string]struct{}, command CommandConfig) e
 		return errors.New("command is empty")
 	}
 
+	switch command.Display {
+	case "", "echarts-json", "apexcharts-json":
+		break
+	default:
+		return errors.Errorf("invalid display=%v", command.Display)
+	}
+
 	for i := range command.Inputs {
 		_, defined := definedInputs[command.Inputs[i].InputSlug]
 		if !defined {

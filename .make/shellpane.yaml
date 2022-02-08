@@ -17,12 +17,23 @@ roles:
 categories:
   - name: sequences
     slug: sequences
-    color: "#ffa502"
+    color: "#F9D371"
   - name: commands
     slug: commands
-    color: "#ff6348"
+    color: "#F47340"
+  - name: charts
+    slug: charts
+    color: "#EF2F88"
 
 views:
+  - slug: display-echarts-chart
+    name: Display echarts chart
+    category: charts
+    sequence: display-echarts-chart
+  - slug: display-apexcharts-chart
+    name: Display apexcharts chart
+    category: charts
+    sequence: display-apexcharts-chart
   - slug: with-shared-input
     name: With shared input
     category: sequences
@@ -57,6 +68,14 @@ views:
     command: command-and-input-with-description
 
 sequences:
+  - slug: display-echarts-chart
+    steps:
+      - name: Echarts chart
+        command: display-echarts-chart
+  - slug: display-apexcharts-chart
+    steps:
+      - name: Apexchart chart
+        command: display-apexcharts-chart
   - slug: with-shared-input
     steps:
       - name: Print A
@@ -165,6 +184,12 @@ commands:
     command: if [ $CONFIRM == "confirm" ]; then echo "confirmed ✅"; else echo "please enter confirm to proceed" && exit1; fi
     inputs:
       - input: CONFIRM
+  - slug: display-echarts-chart
+    command: cat .make/echarts.json
+    display: echarts-json
+  - slug: display-apexcharts-chart
+    command: cat .make/apexcharts.json
+    display: apexcharts-json
 
 inputs:
   - slug: A

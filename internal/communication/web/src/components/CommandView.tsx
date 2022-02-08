@@ -41,9 +41,6 @@ export const CommandView = (props: CommandViewProps) => {
     }
 
     useEffect(() => {
-        console.log(props.viewConfig.Execute.Auto)
-        console.log(count)
-
         if (!props.viewConfig.Execute.Auto && count === 0) {
             return
         }
