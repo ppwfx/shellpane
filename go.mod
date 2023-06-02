@@ -1,6 +1,6 @@
 module github.com/ppwfx/shellpane
 
-go 1.20
+go 1.19
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

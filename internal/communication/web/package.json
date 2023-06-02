@@ -2,6 +2,9 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "devDependencies": {
+    "if-node-version": "1.1.1"
+  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
@@ -21,7 +24,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts --openssl-legacy-provider build",
+    "build": "if-node-version '>= 17' && react-scripts --openssl-legacy-provider build || react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
