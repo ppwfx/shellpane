@@ -6110,14 +6110,6 @@ ieee754@^1.1.4:
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.2.1.tgz#8eb7a10a63fff25d15a57b001586d177d1b0d352"
   integrity sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==
 
-if-node-version@^5.11.4:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/if-node-version/-/if-node-version-1.1.1.tgz#7fbe9fb5eb8425620e3b29449dfa286b23c37726"
-  integrity sha512-qMcJD7ftbSWlf+6w8nzZAWKOELmG3xH5Gu5XYW2+f9uaYj1t9JX5KNWxnvNMGhu8f+uIUgnqFHLlwyKTHaLWWA==
-  dependencies:
-    cross-spawn "^5.0.1"
-    semver "^5.2.0"
-
 iferr@^0.1.5:
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/iferr/-/iferr-0.1.5.tgz#c60eed69e6d8fdb6b3104a1fcbca1c192dc5b501"
