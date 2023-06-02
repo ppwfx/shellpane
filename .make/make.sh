@@ -17,6 +17,8 @@ function run-frontend() {
 }
 
 function build() {
+  export NODE_OPTIONS=--openssl-legacy-provide
+
   (cd internal/communication/web && yarn install && REACT_APP_CATEGORIES_CSS_HOST="" yarn build)
   go build -o shellpane cmd/main.go
 }
