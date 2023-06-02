@@ -5,7 +5,7 @@ set -eox pipefail
 function run-backend() {
   export SHELLPANE_YAML="$(cat .make/shellpane.yaml)"
 
-  go run cmd/main.go --http-addr 0.0.0.0:8888 --cors-origin http://localhost:3000 --user-id-header x-user-id --default-user-id xyz@abc.com --logger-level debug
+  go run cmd/main.go --http-addr 0.0.0.0:8888 --cors-origin http://localhost:3000 --user-id-header x-user-id --default-user-id xyz@abc.com --logger-min-level debug
 }
 
 function test() {
